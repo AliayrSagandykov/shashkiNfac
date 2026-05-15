@@ -1,11 +1,30 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useGameStore } from '../store/gameStore'
+import { useGameStore, type TimeControl } from '../store/gameStore'
 import Board from '../components/Board'
-import { applyMove, checkWinner, getLegalMoves, getInitialBoard } from '../engine/rules'
+import Clock from '../components/Clock'
+import ChatPanel from '../components/ChatPanel'
+import MoveList from '../components/MoveList'
+import {
+  applyMove,
+  checkWinner,
+  getLegalMoves,
+  getInitialBoard,
+} from '../engine/rules'
 import { getBestMove } from '../engine/ai'
 import type { Move, Board as BoardT, Player } from '../engine/rules'
 import { getSocket, disconnectSocket } from '../services/socket'
+import { useProfileStore } from '../store/profileStore'
+import { t } from '../i18n'
+
+interface EndPayload {
+  winner: Player | 'draw'
+  reason: 'no_moves' | 'resign' | 'timeout' | 'draw_agreed'
+  ratings?: {
+    black: { userId: string; old: number; new: number; delta: number }
+    white: { userId: string; old: number; new: number; delta: number }
+  }
+}
 
 export default function Game() {
   const navigate = useNavigate()
@@ -19,12 +38,46 @@ export default function Game() {
     winner,
     myColor,
     opponentName,
+    myName,
+    myRating,
+    opponentRating,
+    ratingChange,
     mode,
     endReason,
+    moves,
+    timeControl,
+    timeBlackMs,
+    timeWhiteMs,
+    serverLastMoveAt,
+    chat,
+    drawOfferFrom,
+    rematchOfferFrom,
+    rematchDeclined,
     setGame,
+    pushChat,
+    pushMove,
     selectCell,
     resetGame,
   } = useGameStore()
+
+  const { profile, applyResult } = useProfileStore()
+  const [, setTick] = useState(0)
+
+  // Tick once per 100ms so live clock counts down for online games.
+  useEffect(() => {
+    if (mode !== 'random' || status !== 'playing') return
+    const id = window.setInterval(() => setTick((n) => n + 1), 100)
+    return () => window.clearInterval(id)
+  }, [mode, status])
+
+  const liveTime = (color: Player): number => {
+    const base = color === 'black' ? timeBlackMs : timeWhiteMs
+    if (!isFinite(base)) return base
+    if (status !== 'playing') return base
+    if (turn !== color) return base
+    const elapsed = Date.now() - serverLastMoveAt
+    return Math.max(0, base - elapsed)
+  }
 
   const executeMove = useCallback(
     (move: Move) => {
@@ -37,7 +90,7 @@ export default function Game() {
       const nextTurn = turn === 'black' ? 'white' : 'black'
       const w = checkWinner(newBoard, nextTurn)
       const nextLegalMoves = w ? [] : getLegalMoves(newBoard, nextTurn)
-
+      pushMove(move)
       setGame({
         board: newBoard,
         turn: nextTurn,
@@ -45,12 +98,28 @@ export default function Game() {
         winner: w,
         status: w ? 'finished' : 'playing',
         selectedCell: null,
+        endReason: w ? 'no_moves' : null,
       })
     },
-    [board, turn, setGame, mode, gameId]
+    [board, turn, setGame, pushMove, mode, gameId],
   )
 
-  // Online multiplayer: listen for server-authoritative updates
+  // Bot AI move
+  useEffect(() => {
+    if (mode !== 'bot' || status !== 'playing') return
+    if (turn === myColor) return
+
+    const timer = setTimeout(() => {
+      const lvlMatch = opponentName?.match(/\d+/)
+      const botLevel = lvlMatch ? parseInt(lvlMatch[0]) : 5
+      const move = getBestMove(board, turn, botLevel)
+      if (move) executeMove(move)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [turn, mode, myColor, board, status, opponentName, executeMove])
+
+  // Online listeners
   useEffect(() => {
     if (mode !== 'random') return
     const s = getSocket()
@@ -60,21 +129,114 @@ export default function Game() {
       turn: Player
       lastMove: Move
       legalMoves: Move[]
+      timeBlackMs: number
+      timeWhiteMs: number
+      lastMoveAt: number
     }) => {
+      pushMove(payload.lastMove)
       setGame({
         board: payload.board,
         turn: payload.turn,
         legalMoves: payload.legalMoves,
+        timeBlackMs: payload.timeBlackMs,
+        timeWhiteMs: payload.timeWhiteMs,
+        serverLastMoveAt: Date.now(),
+        lastServerSyncAt: Date.now(),
         selectedCell: null,
+        drawOfferFrom: null,
       })
     }
 
-    const onEnd = (payload: { winner: Player; reason: 'no_moves' | 'resign' }) => {
+    const onEnd = (payload: EndPayload) => {
+      const myColorNow = useGameStore.getState().myColor
+      let myResult: 'win' | 'loss' | 'draw' = 'draw'
+      let myRC: { old: number; new: number; delta: number } | null = null
+      let oppRC: { old: number; new: number; delta: number } | null = null
+      if (payload.ratings) {
+        if (myColorNow === 'black') {
+          myRC = payload.ratings.black
+          oppRC = payload.ratings.white
+        } else {
+          myRC = payload.ratings.white
+          oppRC = payload.ratings.black
+        }
+        if (payload.winner === 'draw') myResult = 'draw'
+        else myResult = payload.winner === myColorNow ? 'win' : 'loss'
+        if (profile && myRC) {
+          void applyResult(myResult, myRC.new)
+        }
+      }
       setGame({
         status: 'finished',
         winner: payload.winner,
         endReason: payload.reason,
         legalMoves: [],
+        selectedCell: null,
+        myRating: myRC?.new ?? useGameStore.getState().myRating,
+        opponentRating: oppRC?.new ?? useGameStore.getState().opponentRating,
+        ratingChange:
+          myRC && oppRC ? { mine: myRC.delta, opponent: oppRC.delta } : null,
+        drawOfferFrom: null,
+      })
+    }
+
+    const onChat = (m: { from: Player | 'system'; text: string; ts: number }) => {
+      pushChat(m)
+    }
+
+    const onDrawOffered = (p: { from: Player }) => setGame({ drawOfferFrom: p.from })
+    const onDrawDeclined = () => setGame({ drawOfferFrom: null })
+
+    const onRematchRequested = (p: { from: Player }) =>
+      setGame({ rematchOfferFrom: p.from })
+    const onRematchDeclined = () =>
+      setGame({ rematchOfferFrom: null, rematchDeclined: true })
+
+    const onRematchStarted = (payload: {
+      gameId: string
+      board: BoardT
+      turn: Player
+      blackId: string
+      whiteId: string
+      blackName: string
+      whiteName: string
+      blackRating: number
+      whiteRating: number
+      timeBlackMs: number
+      timeWhiteMs: number
+      timeControl: TimeControl
+    }) => {
+      const sId = s.id
+      const newMyColor: Player = payload.blackId === sId ? 'black' : 'white'
+      const newOpponentName =
+        newMyColor === 'black' ? payload.whiteName : payload.blackName
+      const newOpponentRating =
+        newMyColor === 'black' ? payload.whiteRating : payload.blackRating
+      const newMyRating =
+        newMyColor === 'black' ? payload.blackRating : payload.whiteRating
+      setGame({
+        gameId: payload.gameId,
+        board: payload.board,
+        turn: payload.turn,
+        legalMoves: getLegalMoves(payload.board, payload.turn),
+        status: 'playing',
+        winner: null,
+        endReason: null,
+        myColor: newMyColor,
+        opponentName: newOpponentName,
+        opponentRating: newOpponentRating,
+        myRating: newMyRating,
+        moves: [],
+        chat: [],
+        ratingChange: null,
+        timeControl: payload.timeControl,
+        timeBlackMs: payload.timeBlackMs,
+        timeWhiteMs: payload.timeWhiteMs,
+        serverLastMoveAt: Date.now(),
+        lastServerSyncAt: Date.now(),
+        drawOfferFrom: null,
+        rematchOfferFrom: null,
+        rematchDeclined: false,
         selectedCell: null,
       })
     }
@@ -93,31 +255,28 @@ export default function Game() {
 
     s.on('game_update', onUpdate)
     s.on('game_end', onEnd)
+    s.on('chat_message', onChat)
+    s.on('draw_offered', onDrawOffered)
+    s.on('draw_declined', onDrawDeclined)
+    s.on('rematch_requested', onRematchRequested)
+    s.on('rematch_declined', onRematchDeclined)
+    s.on('rematch_started', onRematchStarted)
     s.on('move_rejected', onRejected)
     s.on('disconnect', onDisconnect)
 
     return () => {
       s.off('game_update', onUpdate)
       s.off('game_end', onEnd)
+      s.off('chat_message', onChat)
+      s.off('draw_offered', onDrawOffered)
+      s.off('draw_declined', onDrawDeclined)
+      s.off('rematch_requested', onRematchRequested)
+      s.off('rematch_declined', onRematchDeclined)
+      s.off('rematch_started', onRematchStarted)
       s.off('move_rejected', onRejected)
       s.off('disconnect', onDisconnect)
     }
-  }, [mode, setGame])
-
-  // Bot AI move
-  useEffect(() => {
-    if (mode !== 'bot' || status !== 'playing') return
-    if (turn === myColor) return
-
-    const timer = setTimeout(() => {
-      const lvlMatch = opponentName?.match(/\d+/)
-      const botLevel = lvlMatch ? parseInt(lvlMatch[0]) : 5
-      const move = getBestMove(board, turn, botLevel)
-      if (move) executeMove(move)
-    }, 300)
-
-    return () => clearTimeout(timer)
-  }, [turn, mode, myColor, board, status, opponentName, executeMove])
+  }, [mode, setGame, pushChat, pushMove, profile, applyResult])
 
   const handleCellClick = (row: number, col: number) => {
     if (status !== 'playing') return
@@ -130,7 +289,7 @@ export default function Game() {
     if (sel) {
       const [fr, fc] = sel
       const move = legal.find(
-        (m) => m.from[0] === fr && m.from[1] === fc && m.to[0] === row && m.to[1] === col
+        (m) => m.from[0] === fr && m.from[1] === fc && m.to[0] === row && m.to[1] === col,
       )
       if (move) {
         executeMove(move)
@@ -141,7 +300,7 @@ export default function Game() {
     selectCell(row, col)
   }
 
-  const handlePlayAgain = () => {
+  const handlePlayAgainLocal = () => {
     const b = getInitialBoard()
     setGame({
       board: b,
@@ -150,6 +309,8 @@ export default function Game() {
       status: 'playing',
       winner: null,
       selectedCell: null,
+      moves: [],
+      endReason: null,
     })
   }
 
@@ -164,8 +325,24 @@ export default function Game() {
 
   const handleResign = () => {
     if (mode !== 'random' || status !== 'playing') return
-    if (!confirm('Resign this game?')) return
+    if (!confirm(t('resign') + '?')) return
     getSocket().emit('resign', { gameId })
+  }
+
+  const handleOfferDraw = () => {
+    if (mode !== 'random' || status !== 'playing') return
+    getSocket().emit('offer_draw', { gameId })
+  }
+
+  const handleAcceptDraw = () => getSocket().emit('accept_draw', { gameId })
+  const handleDeclineDraw = () => getSocket().emit('decline_draw', { gameId })
+
+  const handleRequestRematch = () => getSocket().emit('request_rematch', { gameId })
+  const handleDeclineRematch = () => getSocket().emit('decline_rematch', { gameId })
+
+  const handleSendChat = (text: string) => {
+    if (mode !== 'random') return
+    getSocket().emit('chat_message', { gameId, text })
   }
 
   if (!gameId) {
@@ -173,82 +350,238 @@ export default function Game() {
     return null
   }
 
-  const youWon = status === 'finished' && winner === myColor
-  const displayTurn =
-    status === 'finished'
-      ? endReason === 'opponent_left'
-        ? 'Opponent disconnected'
-        : `${winner === 'black' ? 'Black' : 'White'} wins!${
-            mode === 'random' ? (youWon ? ' (you)' : ' (opponent)') : ''
-          }${endReason === 'resign' ? ' — by resignation' : ''}`
-      : turn === myColor && (mode === 'random' || mode === 'bot')
-      ? 'Your turn'
-      : mode === 'random'
-      ? "Opponent's turn"
-      : `${turn === 'black' ? 'Black' : 'White'}'s turn`
+  const opponentColor: Player = myColor === 'black' ? 'white' : 'black'
+  const myTime = liveTime(myColor ?? 'black')
+  const oppTime = liveTime(opponentColor)
+  const isUnlimited = timeControl === 'unlimited' || mode !== 'random'
 
-  return (
-    <div className="min-h-screen bg-[#1a1a2e] flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-2xl">
-        <div className="flex items-center justify-between mb-4">
-          <button
-            onClick={leaveGame}
-            className="text-gray-400 hover:text-white transition-colors flex items-center gap-2"
-          >
-            ← Back
-          </button>
-          <div className="text-white font-semibold flex items-center gap-3">
-            <span>{opponentName}</span>
-            {mode === 'random' && status === 'playing' && (
-              <button
-                onClick={handleResign}
-                className="text-red-400 hover:text-red-300 text-sm border border-red-900 hover:border-red-500 px-3 py-1 rounded-lg transition-colors"
-              >
-                Resign
-              </button>
-            )}
-          </div>
+  const resultText = (() => {
+    if (status !== 'finished') {
+      if (mode === 'random' || mode === 'bot') {
+        return turn === myColor ? t('yourTurn') : t('opponentTurn')
+      }
+      return turn === 'black' ? t('blackWins').replace(/[wW]ins?/, "'s turn") : "White's turn"
+    }
+    if (endReason === 'opponent_left') return t('opponentLeft')
+    if (winner === 'draw') return `${t('drawResult')} — ${t('byAgreement')}`
+    const reasonLabel =
+      endReason === 'resign'
+        ? t('byResignation')
+        : endReason === 'timeout'
+        ? t('byTimeout')
+        : endReason === 'no_moves'
+        ? t('byNoMoves')
+        : ''
+    if (mode === 'random' && myColor) {
+      const won = winner === myColor
+      return `${won ? t('youWon') : t('youLost')}${reasonLabel ? ' — ' + reasonLabel : ''}`
+    }
+    return `${winner === 'black' ? t('blackWins') : t('whiteWins')}${
+      reasonLabel ? ' — ' + reasonLabel : ''
+    }`
+  })()
+
+  const opponentAvatar = (opponentName ?? 'O').charAt(0).toUpperCase()
+  const myAvatar = (myName ?? 'You').charAt(0).toUpperCase()
+
+  const PlayerCard = ({
+    side,
+    name,
+    rating,
+    timeMs,
+    active,
+  }: {
+    side: 'top' | 'bottom'
+    name: string
+    rating: number | null
+    timeMs: number
+    active: boolean
+  }) => (
+    <div className="flex items-center justify-between bg-[#1f2937] rounded-xl border border-[#374151] px-3 py-2">
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+          {side === 'top' ? opponentAvatar : myAvatar}
         </div>
-
-        <div className="bg-[#16213e] rounded-2xl p-4 border border-[#0f3460]">
-          <div className="text-center mb-4">
-            <span
-              className={`text-lg font-bold ${
-                status === 'finished' ? 'text-yellow-400' : 'text-white'
-              }`}
-            >
-              {displayTurn}
-            </span>
-          </div>
-
-          <Board
-            board={board}
-            legalMoves={legalMoves}
-            selectedCell={selectedCell}
-            onCellClick={handleCellClick}
-            perspective={myColor ?? 'black'}
-          />
-
-          {status === 'finished' && (
-            <div className="mt-4 flex gap-3 justify-center">
-              <button
-                onClick={leaveGame}
-                className="bg-[#0f3460] hover:bg-[#1a4a7a] text-white px-6 py-2 rounded-xl transition-colors"
-              >
-                Home
-              </button>
-              {mode !== 'random' && (
-              <button
-                onClick={handlePlayAgain}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl transition-colors"
-              >
-                Play Again
-              </button>
-              )}
-            </div>
+        <div className="min-w-0">
+          <div className="text-white text-sm font-medium truncate">{name}</div>
+          {rating != null && (
+            <div className="text-gray-400 text-xs">⭐ {rating}</div>
           )}
         </div>
       </div>
+      <Clock ms={timeMs} active={active} unlimited={isUnlimited} />
+    </div>
+  )
+
+  return (
+    <div className="min-h-screen bg-[#0f1419] flex flex-col lg:flex-row">
+      <main className="flex-1 flex items-center justify-center p-3 lg:p-6">
+        <div className="w-full max-w-2xl">
+          <div className="flex items-center justify-between mb-3">
+            <button
+              onClick={leaveGame}
+              className="text-gray-400 hover:text-white text-sm transition-colors"
+            >
+              ← {t('home_')}
+            </button>
+            {mode === 'random' && (
+              <div className="text-gray-500 text-xs">{timeControl}</div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <PlayerCard
+              side="top"
+              name={opponentName ?? 'Opponent'}
+              rating={mode === 'random' ? opponentRating : null}
+              timeMs={oppTime}
+              active={status === 'playing' && turn === opponentColor}
+            />
+
+            <div className="bg-[#16213e] rounded-2xl p-3 border border-[#0f3460]">
+              <div className="text-center mb-2">
+                <span
+                  className={`text-base font-bold ${
+                    status === 'finished' ? 'text-yellow-400' : 'text-white'
+                  }`}
+                >
+                  {resultText}
+                </span>
+                {status === 'finished' && ratingChange && (
+                  <span
+                    className={`ml-2 text-sm ${
+                      ratingChange.mine >= 0 ? 'text-green-400' : 'text-red-400'
+                    }`}
+                  >
+                    ({ratingChange.mine >= 0 ? '+' : ''}
+                    {ratingChange.mine})
+                  </span>
+                )}
+              </div>
+
+              <Board
+                board={board}
+                legalMoves={legalMoves}
+                selectedCell={selectedCell}
+                onCellClick={handleCellClick}
+                perspective={myColor ?? 'black'}
+              />
+            </div>
+
+            <PlayerCard
+              side="bottom"
+              name={myName ?? 'You'}
+              rating={mode === 'random' ? myRating : null}
+              timeMs={myTime}
+              active={status === 'playing' && turn === myColor}
+            />
+
+            {/* Action buttons */}
+            <div className="bg-[#1f2937] rounded-xl border border-[#374151] p-2 flex gap-2">
+              {status === 'playing' && mode === 'random' && (
+                <>
+                  <button
+                    onClick={handleOfferDraw}
+                    disabled={drawOfferFrom === myColor}
+                    className="flex-1 bg-[#374151] hover:bg-[#4b5563] disabled:opacity-50 text-white text-sm py-2 rounded-lg transition-colors"
+                  >
+                    ½ {t('offerDraw')}
+                  </button>
+                  <button
+                    onClick={handleResign}
+                    className="flex-1 bg-[#374151] hover:bg-red-700 text-white text-sm py-2 rounded-lg transition-colors"
+                  >
+                    🏳 {t('resign')}
+                  </button>
+                </>
+              )}
+              {status === 'finished' && (
+                <>
+                  {mode === 'random' && !rematchDeclined ? (
+                    rematchOfferFrom && rematchOfferFrom !== myColor ? (
+                      <>
+                        <button
+                          onClick={handleRequestRematch}
+                          className="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm py-2 rounded-lg transition-colors"
+                        >
+                          ✓ {t('rematch')}
+                        </button>
+                        <button
+                          onClick={handleDeclineRematch}
+                          className="flex-1 bg-[#374151] hover:bg-[#4b5563] text-white text-sm py-2 rounded-lg transition-colors"
+                        >
+                          ✕ {t('decline')}
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={handleRequestRematch}
+                        disabled={rematchOfferFrom === myColor}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm py-2 rounded-lg transition-colors"
+                      >
+                        🔄 {rematchOfferFrom === myColor ? t('rematchOffered') : t('rematch')}
+                      </button>
+                    )
+                  ) : null}
+                  <button
+                    onClick={
+                      mode === 'random' ? leaveGame : handlePlayAgainLocal
+                    }
+                    className="flex-1 bg-[#374151] hover:bg-[#4b5563] text-white text-sm py-2 rounded-lg transition-colors"
+                  >
+                    {mode === 'random' ? t('home_') : t('rematch')}
+                  </button>
+                  {mode !== 'random' && (
+                    <button
+                      onClick={leaveGame}
+                      className="flex-1 bg-[#374151] hover:bg-[#4b5563] text-white text-sm py-2 rounded-lg transition-colors"
+                    >
+                      {t('home_')}
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+
+            {drawOfferFrom && drawOfferFrom !== myColor && status === 'playing' && (
+              <div className="bg-yellow-900/40 border border-yellow-700 rounded-xl p-3 flex items-center justify-between">
+                <span className="text-yellow-200 text-sm">½ {t('drawOffered')}</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleAcceptDraw}
+                    className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 rounded-lg"
+                  >
+                    {t('accept')}
+                  </button>
+                  <button
+                    onClick={handleDeclineDraw}
+                    className="bg-[#374151] hover:bg-[#4b5563] text-white text-xs px-3 py-1.5 rounded-lg"
+                  >
+                    {t('decline')}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+
+      {/* Side panel: moves + chat (only for online) */}
+      <aside className="w-full lg:w-80 shrink-0 p-3 lg:py-6 lg:pr-6 lg:pl-0 space-y-3 flex flex-col">
+        <div className="h-48 lg:h-1/2">
+          <MoveList moves={moves} />
+        </div>
+        {mode === 'random' && (
+          <div className="h-64 lg:flex-1">
+            <ChatPanel
+              messages={chat}
+              myColor={myColor}
+              disabled={status === 'finished'}
+              onSend={handleSendChat}
+            />
+          </div>
+        )}
+      </aside>
     </div>
   )
 }

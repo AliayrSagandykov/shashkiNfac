@@ -3,18 +3,29 @@ import { useEffect } from 'react'
 import Login from './pages/Login'
 import Home from './pages/Home'
 import Game from './pages/Game'
+import Profile from './pages/Profile'
 import { useAuthStore } from './store/authStore'
+import { useProfileStore } from './store/profileStore'
 
 export default function App() {
   const { user, loading, init } = useAuthStore()
+  const { load: loadProfile, clear: clearProfile } = useProfileStore()
 
   useEffect(() => {
     init()
   }, [init])
 
+  useEffect(() => {
+    if (!user || user.id.startsWith('guest-')) {
+      clearProfile()
+      return
+    }
+    void loadProfile(user.id)
+  }, [user, loadProfile, clearProfile])
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-[#0f1419]">
         <div className="text-white text-xl">Loading...</div>
       </div>
     )
@@ -24,6 +35,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
       <Route path="/" element={user ? <Home /> : <Navigate to="/login" />} />
+      <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
       <Route path="/game/:gameId" element={<Game />} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
