@@ -16,6 +16,8 @@ export interface GameRoom {
   userIdWhite: string
   usernameBlack: string
   usernameWhite: string
+  avatarBlack: string | null
+  avatarWhite: string | null
   ratingBlack: number
   ratingWhite: number
   board: Board
@@ -38,6 +40,7 @@ export interface QueueEntry {
   socketId: string
   userId: string
   username: string
+  avatarUrl: string | null
   rating: number
   joinedAt: number
   timeControl: TimeControl

@@ -11,6 +11,8 @@ export interface CreateGameRoomInput {
   userIdWhite: string
   usernameBlack: string
   usernameWhite: string
+  avatarBlack: string | null
+  avatarWhite: string | null
   ratingBlack: number
   ratingWhite: number
   timeControl: TimeControl
@@ -28,6 +30,8 @@ export function createGameRoom(input: CreateGameRoomInput): GameRoom {
     userIdWhite: input.userIdWhite,
     usernameBlack: input.usernameBlack,
     usernameWhite: input.usernameWhite,
+    avatarBlack: input.avatarBlack,
+    avatarWhite: input.avatarWhite,
     ratingBlack: input.ratingBlack,
     ratingWhite: input.ratingWhite,
     board,

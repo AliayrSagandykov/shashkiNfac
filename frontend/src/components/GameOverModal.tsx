@@ -1,5 +1,6 @@
 import { t } from '../i18n'
 import type { Player } from '../engine/rules'
+import AvatarCmp from './Avatar'
 
 interface Props {
   open: boolean
@@ -9,6 +10,8 @@ interface Props {
   isOnline: boolean
   myName: string
   opponentName: string
+  myAvatarUrl: string | null
+  opponentAvatarUrl: string | null
   myRating: number
   opponentRating: number
   ratingDelta: number | null
@@ -20,18 +23,16 @@ interface Props {
   onHome: () => void
 }
 
-function Avatar({ name, color }: { name: string; color: 'black' | 'white' }) {
+function PlayerBadge({
+  name,
+  url,
+}: {
+  name: string
+  url: string | null
+}) {
   return (
     <div className="flex flex-col items-center gap-1">
-      <div
-        className={`w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-lg ${
-          color === 'black'
-            ? 'bg-gradient-to-br from-gray-700 to-gray-900'
-            : 'bg-gradient-to-br from-gray-200 to-gray-400 text-gray-900'
-        }`}
-      >
-        {(name ?? '?').charAt(0).toUpperCase()}
-      </div>
+      <AvatarCmp name={name} url={url} size={56} />
       <div className="text-white text-xs font-medium max-w-[6rem] truncate">{name}</div>
     </div>
   )
@@ -91,14 +92,14 @@ export default function GameOverModal(props: Props) {
 
         <div className="px-6 py-5">
           <div className="flex items-center justify-between mb-5">
-            <Avatar
+            <PlayerBadge
               name={myColor === 'black' ? props.myName : props.opponentName}
-              color="black"
+              url={myColor === 'black' ? props.myAvatarUrl : props.opponentAvatarUrl}
             />
             <div className="text-gray-400 font-bold text-lg">vs</div>
-            <Avatar
+            <PlayerBadge
               name={myColor === 'white' ? props.myName : props.opponentName}
-              color="white"
+              url={myColor === 'white' ? props.myAvatarUrl : props.opponentAvatarUrl}
             />
           </div>
 
