@@ -5,6 +5,8 @@ import { Server } from 'socket.io'
 import cors from 'cors'
 import { setupGameHandlers } from './handlers/gameHandlers'
 import { setupMatchmaking } from './matchmaking/matchmaker'
+import { gameRooms } from './game/gameRoom'
+import { endGame } from './handlers/timeoutWatcher'
 
 const app = express()
 const httpServer = createServer(app)
@@ -37,6 +39,14 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log(`Client disconnected: ${socket.id}`)
     matchmaker.removeFromQueue(socket.id)
+    for (const room of gameRooms.values()) {
+      if (room.status !== 'playing') continue
+      if (room.playerBlack === socket.id) {
+        endGame(io, room.id, 'white', 'resign')
+      } else if (room.playerWhite === socket.id) {
+        endGame(io, room.id, 'black', 'resign')
+      }
+    }
   })
 })
 

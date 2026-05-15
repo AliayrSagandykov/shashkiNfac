@@ -5,11 +5,19 @@ interface Props {
   board: BoardType
   legalMoves: Move[]
   selectedCell: [number, number] | null
+  lastMove?: Move | null
   onCellClick: (row: number, col: number) => void
   perspective: Player
 }
 
-export default function Board({ board, legalMoves, selectedCell, onCellClick, perspective }: Props) {
+export default function Board({
+  board,
+  legalMoves,
+  selectedCell,
+  lastMove,
+  onCellClick,
+  perspective,
+}: Props) {
   const rows = perspective === 'black' ? [...Array(10).keys()] : [...Array(10).keys()].reverse()
   const cols = perspective === 'black' ? [...Array(10).keys()] : [...Array(10).keys()].reverse()
 
@@ -28,10 +36,18 @@ export default function Board({ board, legalMoves, selectedCell, onCellClick, pe
     movablePieces.add(`${m.from[0]},${m.from[1]}`)
   }
 
+  const lastFromKey = lastMove ? `${lastMove.from[0]},${lastMove.from[1]}` : null
+  const lastToKey = lastMove ? `${lastMove.to[0]},${lastMove.to[1]}` : null
+
+  const DARK = 'bg-[#739552]'
+  const LIGHT = 'bg-[#ebecd0]'
+  const DARK_HIGHLIGHT = 'bg-[#baca44]'
+  const LIGHT_HIGHLIGHT = 'bg-[#f6f680]'
+
   return (
-    <div className="w-full aspect-square">
+    <div className="w-full aspect-square select-none">
       <div
-        className="grid w-full h-full"
+        className="grid w-full h-full rounded-md overflow-hidden shadow-lg"
         style={{ gridTemplateColumns: 'repeat(10, 1fr)', gridTemplateRows: 'repeat(10, 1fr)' }}
       >
         {rows.map((row) =>
@@ -41,16 +57,26 @@ export default function Board({ board, legalMoves, selectedCell, onCellClick, pe
             const isSelected = selectedCell?.[0] === row && selectedCell?.[1] === col
             const isTarget = validTargets.has(`${row},${col}`)
             const isMovable = movablePieces.has(`${row},${col}`)
+            const cellKey = `${row},${col}`
+            const isLast = cellKey === lastFromKey || cellKey === lastToKey
+
+            const bg = isLast
+              ? isDark
+                ? DARK_HIGHLIGHT
+                : LIGHT_HIGHLIGHT
+              : isDark
+              ? DARK
+              : LIGHT
 
             return (
               <div
                 key={`${row}-${col}`}
-                onClick={() => isDark ? onCellClick(row, col) : undefined}
+                onClick={() => (isDark ? onCellClick(row, col) : undefined)}
                 className={[
                   'relative flex items-center justify-center',
-                  isDark ? 'cursor-pointer bg-[#5d4037]' : 'bg-[#d7ccc8]',
-                  isSelected ? 'ring-4 ring-yellow-400 ring-inset z-10' : '',
-                  isTarget ? 'ring-4 ring-green-400 ring-inset' : '',
+                  bg,
+                  isDark ? 'cursor-pointer' : '',
+                  isSelected ? 'ring-4 ring-yellow-300 ring-inset z-10' : '',
                 ].join(' ')}
               >
                 {piece && (
@@ -61,11 +87,14 @@ export default function Board({ board, legalMoves, selectedCell, onCellClick, pe
                   />
                 )}
                 {isTarget && !piece && (
-                  <div className="w-1/3 h-1/3 rounded-full bg-green-400 opacity-60" />
+                  <div className="w-1/3 h-1/3 rounded-full bg-black/30" />
+                )}
+                {isTarget && piece && (
+                  <div className="absolute inset-1 rounded-full ring-4 ring-black/30" />
                 )}
               </div>
             )
-          })
+          }),
         )}
       </div>
     </div>
