@@ -495,12 +495,14 @@ export default function Game() {
       </main>
 
       {/* Side panel: moves + chat (only for online) */}
-      <aside className="w-full lg:w-80 shrink-0 p-3 lg:py-6 lg:pr-6 lg:pl-0 space-y-3 flex flex-col">
-        <div className="h-48 lg:h-1/2">
+      <aside
+        className={`w-full lg:w-80 shrink-0 p-3 lg:py-6 lg:pr-6 lg:pl-0 flex flex-col gap-3 lg:h-screen lg:overflow-hidden`}
+      >
+        <div className={`min-h-0 ${mode === 'random' ? 'h-48 lg:flex-1' : 'h-72 lg:h-96'}`}>
           <MoveList moves={moves} />
         </div>
         {mode === 'random' && (
-          <div className="h-64 lg:flex-1">
+          <div className="h-64 lg:flex-1 min-h-0">
             <ChatPanel
               messages={chat}
               myColor={myColor}

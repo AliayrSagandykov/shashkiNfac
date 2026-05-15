@@ -4,6 +4,8 @@ import Login from './pages/Login'
 import Home from './pages/Home'
 import Game from './pages/Game'
 import Profile from './pages/Profile'
+import Leaderboard from './pages/Leaderboard'
+import News from './pages/News'
 import { useAuthStore } from './store/authStore'
 import { useProfileStore } from './store/profileStore'
 
@@ -36,6 +38,9 @@ export default function App() {
       <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
       <Route path="/" element={user ? <Home /> : <Navigate to="/login" />} />
       <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
+      <Route path="/u/:id" element={user ? <Profile /> : <Navigate to="/login" />} />
+      <Route path="/leaderboard" element={user ? <Leaderboard /> : <Navigate to="/login" />} />
+      <Route path="/news" element={user ? <News /> : <Navigate to="/login" />} />
       <Route path="/game/:gameId" element={<Game />} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>

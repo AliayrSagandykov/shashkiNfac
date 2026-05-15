@@ -4,20 +4,16 @@ import { useAuthStore } from '../store/authStore'
 import { useProfileStore } from '../store/profileStore'
 
 interface Item {
-  to?: string
+  to: string
   icon: string
-  labelKey: 'play' | 'profile' | 'puzzles' | 'learn' | 'practice' | 'watch' | 'community' | 'more'
-  disabled?: boolean
+  labelKey: 'play' | 'leaderboard' | 'news' | 'profile'
 }
 
 const items: Item[] = [
   { to: '/', icon: '▶', labelKey: 'play' },
-  { icon: '🧩', labelKey: 'puzzles', disabled: true },
-  { icon: '🎓', labelKey: 'learn', disabled: true },
-  { icon: '🏋', labelKey: 'practice', disabled: true },
-  { icon: '👁', labelKey: 'watch', disabled: true },
-  { icon: '👥', labelKey: 'community', disabled: true },
-  { icon: '⋯', labelKey: 'more', disabled: true },
+  { to: '/leaderboard', icon: '🏆', labelKey: 'leaderboard' },
+  { to: '/news', icon: '📰', labelKey: 'news' },
+  { to: '/profile', icon: '👤', labelKey: 'profile' },
 ]
 
 export default function Sidebar() {
@@ -42,37 +38,24 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 py-3 space-y-0.5 overflow-y-auto">
-        {items.map((it, i) =>
-          it.to ? (
-            <NavLink
-              key={i}
-              to={it.to}
-              end
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-5 py-2.5 text-sm transition-colors ${
-                  isActive
-                    ? 'bg-[#1f2937] text-white border-l-2 border-blue-500'
-                    : 'text-gray-400 hover:text-white hover:bg-[#1a2333]'
-                }`
-              }
-            >
-              <span className="text-lg w-5 text-center">{it.icon}</span>
-              <span className="font-medium">{t(it.labelKey)}</span>
-            </NavLink>
-          ) : (
-            <div
-              key={i}
-              className={`flex items-center gap-3 px-5 py-2.5 text-sm ${
-                it.disabled ? 'text-gray-600 cursor-not-allowed' : 'text-gray-400'
-              }`}
-              title={it.disabled ? '—' : undefined}
-            >
-              <span className="text-lg w-5 text-center">{it.icon}</span>
-              <span className="font-medium">{t(it.labelKey)}</span>
-            </div>
-          ),
-        )}
+      <nav className="flex-1 py-3 space-y-0.5">
+        {items.map((it) => (
+          <NavLink
+            key={it.to}
+            to={it.to}
+            end
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-5 py-2.5 text-sm transition-colors ${
+                isActive
+                  ? 'bg-[#1f2937] text-white border-l-2 border-blue-500'
+                  : 'text-gray-400 hover:text-white hover:bg-[#1a2333]'
+              }`
+            }
+          >
+            <span className="text-lg w-5 text-center">{it.icon}</span>
+            <span className="font-medium">{t(it.labelKey)}</span>
+          </NavLink>
+        ))}
       </nav>
 
       <div className="border-t border-[#1f2937] p-3">
@@ -80,8 +63,12 @@ export default function Sidebar() {
           onClick={() => navigate('/profile')}
           className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#1a2333] transition-colors text-left"
         >
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
-            {username.charAt(0).toUpperCase()}
+          <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+            ) : (
+              username.charAt(0).toUpperCase()
+            )}
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-white text-sm font-medium truncate">{username}</div>
