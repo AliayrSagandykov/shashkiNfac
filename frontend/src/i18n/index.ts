@@ -91,6 +91,8 @@ const dict = {
     noPlayersYet: 'No players yet. Play a ranked game to appear here.',
     viewProfile: 'View profile',
     memberSince: 'Member since',
+    wideningRange: 'Widening range (±400)…',
+    anyOpponent: 'Matching any opponent…',
   },
   ru: {
     play: 'Играть',
@@ -184,6 +186,8 @@ const dict = {
     noPlayersYet: 'Пока никого. Сыграйте рейтинговую партию, чтобы попасть в топ.',
     viewProfile: 'Открыть профиль',
     memberSince: 'С нами с',
+    wideningRange: 'Расширяем диапазон до ±400…',
+    anyOpponent: 'Ищем любого свободного…',
   },
 } as const
 

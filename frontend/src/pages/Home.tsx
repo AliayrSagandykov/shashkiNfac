@@ -233,17 +233,23 @@ export default function Home() {
               <div>
                 <div className="text-gray-400 text-xs">{t('streak')}</div>
                 <div className="text-white text-lg font-bold">
-                  {profile?.win_streak ?? 0}
+                  {profile?.daily_streak ?? 0}
                 </div>
-                <div className="text-gray-500 text-[11px]">{t('streakSub')}</div>
+                <div className="text-gray-500 text-[11px]">
+                  {profile && profile.best_daily_streak > 0
+                    ? `${t('bestRating')} ${profile.best_daily_streak}`
+                    : t('streakSub')}
+                </div>
               </div>
             </div>
             <div className="bg-[#1f2937] rounded-2xl p-5 border border-[#374151] flex items-center gap-3">
-              <div className="text-4xl">🧩</div>
+              <div className="text-4xl">⭐</div>
               <div>
-                <div className="text-gray-400 text-xs">{t('puzzles')}</div>
+                <div className="text-gray-400 text-xs">{t('bestRating')}</div>
                 <div className="text-white text-lg font-bold">{profile?.best_rating ?? 1200}</div>
-                <div className="text-gray-500 text-[11px]">{t('bestRating')}</div>
+                <div className="text-gray-500 text-[11px]">
+                  {t('rating')} {profile?.rating ?? 1200}
+                </div>
               </div>
             </div>
             <div className="bg-[#1f2937] rounded-2xl p-5 border border-[#374151] flex items-center gap-3">
@@ -346,7 +352,12 @@ export default function Home() {
             <div className="text-5xl mb-4 animate-pulse">🌐</div>
             <h3 className="text-white text-xl font-bold mb-2">{t('searching')}</h3>
             <p className="text-gray-400 text-sm mb-1">
-              {queueTc} · {t('matchByRating')}
+              {queueTc} ·{' '}
+              {elapsed < 15
+                ? `${t('matchByRating')} (±200)`
+                : elapsed < 40
+                ? t('wideningRange')
+                : t('anyOpponent')}
             </p>
             <p className="text-gray-500 text-xs mb-6">
               {Math.floor(elapsed / 60).toString().padStart(2, '0')}:
