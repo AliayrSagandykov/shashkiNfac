@@ -6,6 +6,7 @@ import Clock from '../components/Clock'
 import ChatPanel from '../components/ChatPanel'
 import MoveList from '../components/MoveList'
 import GameOverModal from '../components/GameOverModal'
+import Avatar from '../components/Avatar'
 import {
   applyMove,
   checkWinner,
@@ -40,6 +41,8 @@ export default function Game() {
     myColor,
     opponentName,
     myName,
+    myAvatarUrl,
+    opponentAvatarUrl,
     myRating,
     opponentRating,
     ratingChange,
@@ -201,6 +204,8 @@ export default function Game() {
       whiteId: string
       blackName: string
       whiteName: string
+      blackAvatar: string | null
+      whiteAvatar: string | null
       blackRating: number
       whiteRating: number
       timeBlackMs: number
@@ -211,6 +216,10 @@ export default function Game() {
       const newMyColor: Player = payload.blackId === sId ? 'black' : 'white'
       const newOpponentName =
         newMyColor === 'black' ? payload.whiteName : payload.blackName
+      const newOpponentAvatar =
+        newMyColor === 'black' ? payload.whiteAvatar : payload.blackAvatar
+      const newMyAvatar =
+        newMyColor === 'black' ? payload.blackAvatar : payload.whiteAvatar
       const newOpponentRating =
         newMyColor === 'black' ? payload.whiteRating : payload.blackRating
       const newMyRating =
@@ -225,6 +234,8 @@ export default function Game() {
         endReason: null,
         myColor: newMyColor,
         opponentName: newOpponentName,
+        opponentAvatarUrl: newOpponentAvatar,
+        myAvatarUrl: newMyAvatar,
         opponentRating: newOpponentRating,
         myRating: newMyRating,
         moves: [],
@@ -371,9 +382,6 @@ export default function Game() {
 
   const lastMove = moves.length > 0 ? moves[moves.length - 1] : null
 
-  const opponentAvatar = (opponentName ?? 'O').charAt(0).toUpperCase()
-  const myAvatar = (myName ?? 'You').charAt(0).toUpperCase()
-
   const PlayerCard = ({
     side,
     name,
@@ -389,9 +397,11 @@ export default function Game() {
   }) => (
     <div className="flex items-center justify-between bg-[#1f2937] rounded-xl border border-[#374151] px-3 py-2">
       <div className="flex items-center gap-2 min-w-0">
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
-          {side === 'top' ? opponentAvatar : myAvatar}
-        </div>
+        <Avatar
+          name={side === 'top' ? opponentName ?? 'O' : myName ?? 'You'}
+          url={side === 'top' ? opponentAvatarUrl : myAvatarUrl}
+          size={36}
+        />
         <div className="min-w-0">
           <div className="text-white text-sm font-medium truncate">{name}</div>
           {rating != null && (
@@ -521,6 +531,8 @@ export default function Game() {
         isOnline={mode === 'random'}
         myName={myName ?? 'You'}
         opponentName={opponentName ?? 'Opponent'}
+        myAvatarUrl={myAvatarUrl}
+        opponentAvatarUrl={opponentAvatarUrl}
         myRating={myRating}
         opponentRating={opponentRating}
         ratingDelta={ratingChange?.mine ?? null}

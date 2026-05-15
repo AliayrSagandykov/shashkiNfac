@@ -30,6 +30,8 @@ interface GameState {
   myColor: Player | null
   opponentName: string | null
   myName: string | null
+  myAvatarUrl: string | null
+  opponentAvatarUrl: string | null
   myRating: number
   opponentRating: number
   ratingChange: { mine: number; opponent: number } | null
@@ -76,6 +78,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   myColor: null,
   opponentName: null,
   myName: null,
+  myAvatarUrl: null,
+  opponentAvatarUrl: null,
   myRating: 1200,
   opponentRating: 1200,
   ratingChange: null,
@@ -138,6 +142,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       winner: null,
       myColor: null,
       opponentName: null,
+      myAvatarUrl: null,
+      opponentAvatarUrl: null,
       ratingChange: null,
       mode: null,
       endReason: null,

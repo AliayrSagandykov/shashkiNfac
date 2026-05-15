@@ -9,6 +9,7 @@ import { supabase } from '../services/supabase'
 import type { Board, Player } from '../engine/rules'
 import Sidebar from '../components/Sidebar'
 import OnboardingModal from '../components/OnboardingModal'
+import Avatar from '../components/Avatar'
 import { t } from '../i18n'
 import type { Level } from '../services/profile'
 
@@ -113,6 +114,7 @@ export default function Home() {
       let myColor: Player | null = null
       let opponentName = 'Opponent'
       let opponentRating = 1200
+      let opponentAvatarUrl: string | null = null
 
       const onMatchFound = (payload: {
         gameId: string
@@ -120,6 +122,8 @@ export default function Home() {
         whiteId: string
         blackName: string
         whiteName: string
+        blackAvatar: string | null
+        whiteAvatar: string | null
         blackRating: number
         whiteRating: number
         timeControl: TimeControl
@@ -127,6 +131,7 @@ export default function Home() {
         myColor = payload.blackId === s.id ? 'black' : 'white'
         opponentName = myColor === 'black' ? payload.whiteName : payload.blackName
         opponentRating = myColor === 'black' ? payload.whiteRating : payload.blackRating
+        opponentAvatarUrl = myColor === 'black' ? payload.whiteAvatar : payload.blackAvatar
       }
       const onGameStart = (payload: {
         gameId: string
@@ -146,8 +151,10 @@ export default function Home() {
           myColor: myColor ?? 'black',
           mode: 'random',
           myName: username,
+          myAvatarUrl: profile?.avatar_url ?? null,
           opponentName,
           opponentRating,
+          opponentAvatarUrl,
           myRating: rating,
           timeControl: payload.timeControl,
           timeBlackMs: payload.timeBlackMs,
@@ -188,6 +195,7 @@ export default function Home() {
       s.emit('join_queue', {
         userId: user.id,
         username,
+        avatarUrl: profile?.avatar_url ?? null,
         rating,
         timeControl: tc,
       })
@@ -213,9 +221,7 @@ export default function Home() {
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-5xl mx-auto px-6 py-8">
           <div className="mb-6 flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl">
-              {username.charAt(0).toUpperCase()}
-            </div>
+            <Avatar name={username} url={profile?.avatar_url} size={48} />
             <div>
               <div className="text-white text-lg font-bold flex items-center gap-2">
                 {username}

@@ -20,6 +20,7 @@ export function setupGameHandlers(socket: Socket, io: Server, matchmaker: Matchm
     (data: {
       userId: string
       username?: string
+      avatarUrl?: string | null
       rating?: number
       timeControl?: TimeControl
     }) => {
@@ -27,6 +28,7 @@ export function setupGameHandlers(socket: Socket, io: Server, matchmaker: Matchm
         socketId: socket.id,
         userId: data?.userId ?? socket.id,
         username: data?.username ?? 'Player',
+        avatarUrl: data?.avatarUrl ?? null,
         rating: data?.rating ?? 1200,
         joinedAt: Date.now(),
         timeControl: data?.timeControl ?? '5+0',
@@ -157,6 +159,8 @@ export function setupGameHandlers(socket: Socket, io: Server, matchmaker: Matchm
       const newWhiteUserId = room.userIdBlack
       const newBlackName = room.usernameWhite
       const newWhiteName = room.usernameBlack
+      const newBlackAvatar = room.avatarWhite
+      const newWhiteAvatar = room.avatarBlack
       const newBlackRating = room.ratingWhite
       const newWhiteRating = room.ratingBlack
 
@@ -168,6 +172,8 @@ export function setupGameHandlers(socket: Socket, io: Server, matchmaker: Matchm
       room.userIdWhite = newWhiteUserId
       room.usernameBlack = newBlackName
       room.usernameWhite = newWhiteName
+      room.avatarBlack = newBlackAvatar
+      room.avatarWhite = newWhiteAvatar
       room.ratingBlack = newBlackRating
       room.ratingWhite = newWhiteRating
       room.board = getInitialBoard()
@@ -190,6 +196,8 @@ export function setupGameHandlers(socket: Socket, io: Server, matchmaker: Matchm
         whiteId: room.playerWhite,
         blackName: room.usernameBlack,
         whiteName: room.usernameWhite,
+        blackAvatar: room.avatarBlack,
+        whiteAvatar: room.avatarWhite,
         blackRating: room.ratingBlack,
         whiteRating: room.ratingWhite,
         timeBlackMs: room.timeBlackMs,
