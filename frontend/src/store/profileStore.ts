@@ -7,7 +7,7 @@ interface ProfileState {
   loading: boolean
   needsOnboarding: boolean
   load: (userId: string) => Promise<void>
-  onboard: (userId: string, username: string, level: Level) => Promise<void>
+  onboard: (userId: string, username: string, level: Level) => Promise<boolean>
   applyResult: (result: 'win' | 'loss' | 'draw', newRating: number) => Promise<void>
   clear: () => void
 }
@@ -30,6 +30,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
   onboard: async (userId, username, level) => {
     const p = await createProfile(userId, username, level)
     set({ profile: p, needsOnboarding: !p })
+    return !!p
   },
 
   applyResult: async (result, newRating) => {

@@ -5,6 +5,7 @@ import Board from '../components/Board'
 import Clock from '../components/Clock'
 import ChatPanel from '../components/ChatPanel'
 import MoveList from '../components/MoveList'
+import GameOverModal from '../components/GameOverModal'
 import {
   applyMove,
   checkWinner,
@@ -246,11 +247,16 @@ export default function Game() {
     }
 
     const onDisconnect = () => {
-      setGame({
-        status: 'finished',
-        endReason: 'opponent_left',
-        legalMoves: [],
-      })
+      // My own socket dropped. Server has already (or will) end the game from
+      // its side, but I won't receive game_end. Show a connection-lost result.
+      const cur = useGameStore.getState()
+      if (cur.status === 'playing') {
+        setGame({
+          status: 'finished',
+          endReason: 'connection_lost',
+          legalMoves: [],
+        })
+      }
     }
 
     s.on('game_update', onUpdate)
@@ -355,31 +361,15 @@ export default function Game() {
   const oppTime = liveTime(opponentColor)
   const isUnlimited = timeControl === 'unlimited' || mode !== 'random'
 
-  const resultText = (() => {
-    if (status !== 'finished') {
-      if (mode === 'random' || mode === 'bot') {
-        return turn === myColor ? t('yourTurn') : t('opponentTurn')
-      }
-      return turn === 'black' ? t('blackWins').replace(/[wW]ins?/, "'s turn") : "White's turn"
+  const turnLabel = (() => {
+    if (status !== 'playing') return ''
+    if (mode === 'random' || mode === 'bot') {
+      return turn === myColor ? t('yourTurn') : t('opponentTurn')
     }
-    if (endReason === 'opponent_left') return t('opponentLeft')
-    if (winner === 'draw') return `${t('drawResult')} — ${t('byAgreement')}`
-    const reasonLabel =
-      endReason === 'resign'
-        ? t('byResignation')
-        : endReason === 'timeout'
-        ? t('byTimeout')
-        : endReason === 'no_moves'
-        ? t('byNoMoves')
-        : ''
-    if (mode === 'random' && myColor) {
-      const won = winner === myColor
-      return `${won ? t('youWon') : t('youLost')}${reasonLabel ? ' — ' + reasonLabel : ''}`
-    }
-    return `${winner === 'black' ? t('blackWins') : t('whiteWins')}${
-      reasonLabel ? ' — ' + reasonLabel : ''
-    }`
+    return turn === 'black' ? '● Black' : '○ White'
   })()
+
+  const lastMove = moves.length > 0 ? moves[moves.length - 1] : null
 
   const opponentAvatar = (opponentName ?? 'O').charAt(0).toUpperCase()
   const myAvatar = (myName ?? 'You').charAt(0).toUpperCase()
@@ -439,30 +429,17 @@ export default function Game() {
             />
 
             <div className="bg-[#16213e] rounded-2xl p-3 border border-[#0f3460]">
-              <div className="text-center mb-2">
-                <span
-                  className={`text-base font-bold ${
-                    status === 'finished' ? 'text-yellow-400' : 'text-white'
-                  }`}
-                >
-                  {resultText}
-                </span>
-                {status === 'finished' && ratingChange && (
-                  <span
-                    className={`ml-2 text-sm ${
-                      ratingChange.mine >= 0 ? 'text-green-400' : 'text-red-400'
-                    }`}
-                  >
-                    ({ratingChange.mine >= 0 ? '+' : ''}
-                    {ratingChange.mine})
-                  </span>
-                )}
-              </div>
+              {status === 'playing' && (
+                <div className="text-center mb-2">
+                  <span className="text-base font-bold text-white">{turnLabel}</span>
+                </div>
+              )}
 
               <Board
                 board={board}
                 legalMoves={legalMoves}
                 selectedCell={selectedCell}
+                lastMove={lastMove}
                 onCellClick={handleCellClick}
                 perspective={myColor ?? 'black'}
               />
@@ -476,72 +453,23 @@ export default function Game() {
               active={status === 'playing' && turn === myColor}
             />
 
-            {/* Action buttons */}
-            <div className="bg-[#1f2937] rounded-xl border border-[#374151] p-2 flex gap-2">
-              {status === 'playing' && mode === 'random' && (
-                <>
-                  <button
-                    onClick={handleOfferDraw}
-                    disabled={drawOfferFrom === myColor}
-                    className="flex-1 bg-[#374151] hover:bg-[#4b5563] disabled:opacity-50 text-white text-sm py-2 rounded-lg transition-colors"
-                  >
-                    ½ {t('offerDraw')}
-                  </button>
-                  <button
-                    onClick={handleResign}
-                    className="flex-1 bg-[#374151] hover:bg-red-700 text-white text-sm py-2 rounded-lg transition-colors"
-                  >
-                    🏳 {t('resign')}
-                  </button>
-                </>
-              )}
-              {status === 'finished' && (
-                <>
-                  {mode === 'random' && !rematchDeclined ? (
-                    rematchOfferFrom && rematchOfferFrom !== myColor ? (
-                      <>
-                        <button
-                          onClick={handleRequestRematch}
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm py-2 rounded-lg transition-colors"
-                        >
-                          ✓ {t('rematch')}
-                        </button>
-                        <button
-                          onClick={handleDeclineRematch}
-                          className="flex-1 bg-[#374151] hover:bg-[#4b5563] text-white text-sm py-2 rounded-lg transition-colors"
-                        >
-                          ✕ {t('decline')}
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={handleRequestRematch}
-                        disabled={rematchOfferFrom === myColor}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm py-2 rounded-lg transition-colors"
-                      >
-                        🔄 {rematchOfferFrom === myColor ? t('rematchOffered') : t('rematch')}
-                      </button>
-                    )
-                  ) : null}
-                  <button
-                    onClick={
-                      mode === 'random' ? leaveGame : handlePlayAgainLocal
-                    }
-                    className="flex-1 bg-[#374151] hover:bg-[#4b5563] text-white text-sm py-2 rounded-lg transition-colors"
-                  >
-                    {mode === 'random' ? t('home_') : t('rematch')}
-                  </button>
-                  {mode !== 'random' && (
-                    <button
-                      onClick={leaveGame}
-                      className="flex-1 bg-[#374151] hover:bg-[#4b5563] text-white text-sm py-2 rounded-lg transition-colors"
-                    >
-                      {t('home_')}
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
+            {status === 'playing' && mode === 'random' && (
+              <div className="bg-[#1f2937] rounded-xl border border-[#374151] p-2 flex gap-2">
+                <button
+                  onClick={handleOfferDraw}
+                  disabled={drawOfferFrom === myColor}
+                  className="flex-1 bg-[#374151] hover:bg-[#4b5563] disabled:opacity-50 text-white text-sm py-2 rounded-lg transition-colors"
+                >
+                  ½ {t('offerDraw')}
+                </button>
+                <button
+                  onClick={handleResign}
+                  className="flex-1 bg-[#374151] hover:bg-red-700 text-white text-sm py-2 rounded-lg transition-colors"
+                >
+                  🏳 {t('resign')}
+                </button>
+              </div>
+            )}
 
             {drawOfferFrom && drawOfferFrom !== myColor && status === 'playing' && (
               <div className="bg-yellow-900/40 border border-yellow-700 rounded-xl p-3 flex items-center justify-between">
@@ -582,6 +510,27 @@ export default function Game() {
           </div>
         )}
       </aside>
+
+      <GameOverModal
+        open={status === 'finished'}
+        myColor={myColor}
+        winner={winner}
+        endReason={endReason}
+        isOnline={mode === 'random'}
+        myName={myName ?? 'You'}
+        opponentName={opponentName ?? 'Opponent'}
+        myRating={myRating}
+        opponentRating={opponentRating}
+        ratingDelta={ratingChange?.mine ?? null}
+        rematchOfferFromOpponent={
+          !!rematchOfferFrom && rematchOfferFrom !== myColor
+        }
+        rematchPendingFromMe={rematchOfferFrom === myColor}
+        rematchDeclined={rematchDeclined}
+        onRematch={mode === 'random' ? handleRequestRematch : handlePlayAgainLocal}
+        onDeclineRematch={handleDeclineRematch}
+        onHome={leaveGame}
+      />
     </div>
   )
 }

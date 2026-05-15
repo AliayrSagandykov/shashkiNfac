@@ -21,19 +21,24 @@ export function endGame(
   const scoreBlack = winner === 'draw' ? 0.5 : winner === 'black' ? 1 : 0
   const elo = computeElo(room.ratingBlack, room.ratingWhite, scoreBlack as 0 | 0.5 | 1)
 
+  const oldBlack = room.ratingBlack
+  const oldWhite = room.ratingWhite
+  room.ratingBlack = elo.newA
+  room.ratingWhite = elo.newB
+
   io.to(room.id).emit('game_end', {
     winner,
     reason,
     ratings: {
       black: {
         userId: room.userIdBlack,
-        old: room.ratingBlack,
+        old: oldBlack,
         new: elo.newA,
         delta: elo.deltaA,
       },
       white: {
         userId: room.userIdWhite,
-        old: room.ratingWhite,
+        old: oldWhite,
         new: elo.newB,
         delta: elo.deltaB,
       },

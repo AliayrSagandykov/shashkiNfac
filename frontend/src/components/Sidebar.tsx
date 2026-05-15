@@ -4,14 +4,20 @@ import { useAuthStore } from '../store/authStore'
 import { useProfileStore } from '../store/profileStore'
 
 interface Item {
-  to: string
+  to?: string
   icon: string
-  label: string
+  labelKey: 'play' | 'profile' | 'puzzles' | 'learn' | 'practice' | 'watch' | 'community' | 'more'
+  disabled?: boolean
 }
 
 const items: Item[] = [
-  { to: '/', icon: '♟', label: 'play' },
-  { to: '/profile', icon: '👤', label: 'profile' },
+  { to: '/', icon: '▶', labelKey: 'play' },
+  { icon: '🧩', labelKey: 'puzzles', disabled: true },
+  { icon: '🎓', labelKey: 'learn', disabled: true },
+  { icon: '🏋', labelKey: 'practice', disabled: true },
+  { icon: '👁', labelKey: 'watch', disabled: true },
+  { icon: '👥', labelKey: 'community', disabled: true },
+  { icon: '⋯', labelKey: 'more', disabled: true },
 ]
 
 export default function Sidebar() {
@@ -36,24 +42,37 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 py-3 space-y-1">
-        {items.map((it) => (
-          <NavLink
-            key={it.to}
-            to={it.to}
-            end
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-5 py-2.5 text-sm transition-colors ${
-                isActive
-                  ? 'bg-[#1f2937] text-white border-l-2 border-blue-500'
-                  : 'text-gray-400 hover:text-white hover:bg-[#1a2333]'
-              }`
-            }
-          >
-            <span className="text-lg w-5">{it.icon}</span>
-            <span className="font-medium">{t(it.label as 'play' | 'profile')}</span>
-          </NavLink>
-        ))}
+      <nav className="flex-1 py-3 space-y-0.5 overflow-y-auto">
+        {items.map((it, i) =>
+          it.to ? (
+            <NavLink
+              key={i}
+              to={it.to}
+              end
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-5 py-2.5 text-sm transition-colors ${
+                  isActive
+                    ? 'bg-[#1f2937] text-white border-l-2 border-blue-500'
+                    : 'text-gray-400 hover:text-white hover:bg-[#1a2333]'
+                }`
+              }
+            >
+              <span className="text-lg w-5 text-center">{it.icon}</span>
+              <span className="font-medium">{t(it.labelKey)}</span>
+            </NavLink>
+          ) : (
+            <div
+              key={i}
+              className={`flex items-center gap-3 px-5 py-2.5 text-sm ${
+                it.disabled ? 'text-gray-600 cursor-not-allowed' : 'text-gray-400'
+              }`}
+              title={it.disabled ? '—' : undefined}
+            >
+              <span className="text-lg w-5 text-center">{it.icon}</span>
+              <span className="font-medium">{t(it.labelKey)}</span>
+            </div>
+          ),
+        )}
       </nav>
 
       <div className="border-t border-[#1f2937] p-3">

@@ -51,9 +51,9 @@ export default function Home() {
     }
   }, [searching])
 
-  const handleOnboard = async (name: string, level: Level) => {
-    if (!user) return
-    await onboard(user.id, name, level)
+  const handleOnboard = async (name: string, level: Level): Promise<boolean> => {
+    if (!user) return false
+    return await onboard(user.id, name, level)
   }
 
   const startBotGame = (level: number) => {
@@ -168,11 +168,20 @@ export default function Home() {
         navigate(`/game/${payload.gameId}`)
       }
 
+      const onConnectError = (err: Error) => {
+        setQueueError(`Server unreachable: ${err.message}`)
+        cleanup()
+        disconnectSocket()
+        setSearching(false)
+      }
+
       const cleanup = () => {
         s.off('match_found', onMatchFound)
         s.off('game_start', onGameStart)
+        s.off('connect_error', onConnectError)
       }
 
+      s.on('connect_error', onConnectError)
       s.on('match_found', onMatchFound)
       s.on('game_start', onGameStart)
 
@@ -357,8 +366,9 @@ export default function Home() {
         <OnboardingModal
           defaultUsername={username}
           onSubmit={async (name, lvl) => {
-            await handleOnboard(name, lvl)
-            await loadProfile(user.id)
+            const ok = await handleOnboard(name, lvl)
+            if (ok) await loadProfile(user.id)
+            return ok
           }}
         />
       )}

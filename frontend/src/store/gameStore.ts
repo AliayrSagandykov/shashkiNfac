@@ -34,7 +34,14 @@ interface GameState {
   opponentRating: number
   ratingChange: { mine: number; opponent: number } | null
   mode: GameMode | null
-  endReason: 'no_moves' | 'resign' | 'opponent_left' | 'timeout' | 'draw_agreed' | null
+  endReason:
+    | 'no_moves'
+    | 'resign'
+    | 'opponent_left'
+    | 'timeout'
+    | 'draw_agreed'
+    | 'connection_lost'
+    | null
   moves: Move[]
 
   timeControl: TimeControl

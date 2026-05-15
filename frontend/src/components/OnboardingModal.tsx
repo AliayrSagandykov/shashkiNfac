@@ -4,7 +4,7 @@ import { LEVEL_STARTING_RATING, type Level } from '../services/profile'
 
 interface Props {
   defaultUsername: string
-  onSubmit: (username: string, level: Level) => Promise<void>
+  onSubmit: (username: string, level: Level) => Promise<boolean>
 }
 
 const LEVELS: Level[] = ['beginner', 'amateur', 'experienced', 'expert']
@@ -13,12 +13,19 @@ export default function OnboardingModal({ defaultUsername, onSubmit }: Props) {
   const [username, setUsername] = useState(defaultUsername)
   const [level, setLevel] = useState<Level>('amateur')
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handle = async () => {
     if (!username.trim()) return
     setSubmitting(true)
+    setError(null)
     try {
-      await onSubmit(username.trim(), level)
+      const ok = await onSubmit(username.trim(), level)
+      if (!ok) {
+        setError(
+          'Could not save profile. Run supabase/migrations/001_profiles.sql in your Supabase SQL editor, then refresh.',
+        )
+      }
     } finally {
       setSubmitting(false)
     }
@@ -69,12 +76,18 @@ export default function OnboardingModal({ defaultUsername, onSubmit }: Props) {
           ))}
         </div>
 
+        {error && (
+          <div className="bg-red-900/40 border border-red-700 text-red-200 text-xs rounded-lg p-3 mb-4">
+            {error}
+          </div>
+        )}
+
         <button
           onClick={handle}
           disabled={submitting || !username.trim()}
           className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-3 rounded-xl font-semibold transition-colors"
         >
-          {t('confirm')}
+          {submitting ? '…' : t('confirm')}
         </button>
       </div>
     </div>

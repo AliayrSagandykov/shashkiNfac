@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { t } from '../i18n'
 import type { Move } from '../engine/rules'
 
@@ -16,12 +17,19 @@ export default function MoveList({ moves }: { moves: Move[] }) {
     else rows[rows.length - 1].white = moves[i]
   }
 
+  const scrollRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
+  }, [moves.length])
+
   return (
     <div className="bg-[#16213e] rounded-xl border border-[#0f3460] overflow-hidden flex flex-col h-full">
       <div className="px-4 py-2 border-b border-[#0f3460] text-gray-300 text-sm font-semibold">
         {t('moves')}
       </div>
-      <div className="overflow-y-auto flex-1 text-sm font-mono">
+      <div ref={scrollRef} className="overflow-y-auto flex-1 text-sm font-mono">
         {rows.length === 0 ? (
           <div className="text-gray-500 text-xs text-center py-4">—</div>
         ) : (
