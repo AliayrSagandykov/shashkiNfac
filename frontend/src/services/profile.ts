@@ -23,6 +23,9 @@ export interface Profile {
   best_win_streak: number
   avatar_url: string | null
   bio: string | null
+  daily_streak: number
+  best_daily_streak: number
+  last_active_on: string | null
 }
 
 export async function fetchProfile(userId: string): Promise<Profile | null> {
@@ -44,12 +47,16 @@ export async function createProfile(
   level: Level,
 ): Promise<Profile | null> {
   const rating = LEVEL_STARTING_RATING[level]
+  const today = new Date().toISOString().slice(0, 10)
   const row = {
     id: userId,
     username,
     level,
     rating,
     best_rating: rating,
+    daily_streak: 1,
+    best_daily_streak: 1,
+    last_active_on: today,
   }
   const { data, error } = await supabase
     .from('profiles')
@@ -107,6 +114,39 @@ export async function recordGameResult(
   if (error) {
     console.error('recordGameResult error', error)
     return null
+  }
+  return data as Profile
+}
+
+function isoDay(d: Date): string {
+  return d.toISOString().slice(0, 10)
+}
+
+/**
+ * Bumps the daily login streak based on the calendar gap to `last_active_on`.
+ * Same day: no-op. Yesterday: +1. Older or never: reset to 1.
+ */
+export async function touchDailyStreak(profile: Profile): Promise<Profile> {
+  const today = isoDay(new Date())
+  if (profile.last_active_on === today) return profile
+
+  const yesterday = isoDay(new Date(Date.now() - 86_400_000))
+  const newStreak = profile.last_active_on === yesterday ? profile.daily_streak + 1 : 1
+  const newBest = Math.max(profile.best_daily_streak, newStreak)
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({
+      daily_streak: newStreak,
+      best_daily_streak: newBest,
+      last_active_on: today,
+    })
+    .eq('id', profile.id)
+    .select()
+    .single()
+  if (error) {
+    console.error('touchDailyStreak error', error)
+    return profile
   }
   return data as Profile
 }

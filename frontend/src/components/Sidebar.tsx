@@ -63,12 +63,8 @@ export default function Sidebar() {
           onClick={() => navigate('/profile')}
           className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#1a2333] transition-colors text-left"
         >
-          <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-            ) : (
-              username.charAt(0).toUpperCase()
-            )}
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+            {username.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-white text-sm font-medium truncate">{username}</div>

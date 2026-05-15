@@ -4,6 +4,7 @@ import {
   createProfile,
   fetchProfile,
   recordGameResult,
+  touchDailyStreak,
   updateProfile,
 } from '../services/profile'
 
@@ -32,7 +33,12 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     }
     set({ loading: true })
     const p = await fetchProfile(userId)
-    set({ profile: p, needsOnboarding: !p, loading: false })
+    if (!p) {
+      set({ profile: null, needsOnboarding: true, loading: false })
+      return
+    }
+    const bumped = await touchDailyStreak(p)
+    set({ profile: bumped, needsOnboarding: false, loading: false })
   },
 
   onboard: async (userId, username, level) => {

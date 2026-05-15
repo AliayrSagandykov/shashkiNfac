@@ -21,14 +21,26 @@ export function setupMatchmaking(io: Server): Matchmaker {
 
     const paired = new Set<string>()
 
+    const now = Date.now()
+    const toleranceFor = (joinedAt: number): number => {
+      const waitedSec = (now - joinedAt) / 1000
+      if (waitedSec < 15) return 200
+      if (waitedSec < 40) return 400
+      return Number.POSITIVE_INFINITY
+    }
+
     for (const bucket of byTc.values()) {
       bucket.sort((a, b) => a.rating - b.rating)
       for (let i = 0; i < bucket.length - 1; i++) {
         if (paired.has(bucket[i].socketId)) continue
         for (let j = i + 1; j < bucket.length; j++) {
           if (paired.has(bucket[j].socketId)) continue
-          const waitedSec = (Date.now() - bucket[i].joinedAt) / 1000
-          const tolerance = 200 + Math.floor(waitedSec / 5) * 100
+          // Use the *longer-waiting* player's tolerance so a fresh joiner
+          // can still be picked up by someone who has been waiting >40s.
+          const tolerance = Math.max(
+            toleranceFor(bucket[i].joinedAt),
+            toleranceFor(bucket[j].joinedAt),
+          )
           if (Math.abs(bucket[i].rating - bucket[j].rating) <= tolerance) {
             paired.add(bucket[i].socketId)
             paired.add(bucket[j].socketId)

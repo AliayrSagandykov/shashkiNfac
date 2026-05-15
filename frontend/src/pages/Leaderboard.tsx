@@ -61,7 +61,7 @@ export default function Leaderboard() {
                       {medal(rank)}
                     </div>
                     <div className="flex items-center gap-3 min-w-0">
-                      <Avatar name={p.username ?? '?'} url={p.avatar_url} size={36} />
+                      <Avatar name={p.username ?? '?'} size={36} />
                       <div className="min-w-0">
                         <div className="text-white font-medium truncate">
                           {p.username ?? 'Unnamed'}
