@@ -21,6 +21,8 @@ export interface Profile {
   draws: number
   win_streak: number
   best_win_streak: number
+  avatar_url: string | null
+  bio: string | null
 }
 
 export async function fetchProfile(userId: string): Promise<Profile | null> {
@@ -61,6 +63,23 @@ export async function createProfile(
   return data as Profile
 }
 
+export async function updateProfile(
+  userId: string,
+  patch: Partial<Pick<Profile, 'username' | 'bio' | 'avatar_url'>>,
+): Promise<Profile | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(patch)
+    .eq('id', userId)
+    .select()
+    .single()
+  if (error) {
+    console.error('updateProfile error', error)
+    return null
+  }
+  return data as Profile
+}
+
 export async function recordGameResult(
   profile: Profile,
   result: 'win' | 'loss' | 'draw',
@@ -90,4 +109,35 @@ export async function recordGameResult(
     return null
   }
   return data as Profile
+}
+
+export async function fetchTopProfiles(limit = 30): Promise<Profile[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('rating', { ascending: false })
+    .limit(limit)
+  if (error) {
+    console.error('fetchTopProfiles error', error)
+    return []
+  }
+  return (data as Profile[]) ?? []
+}
+
+export async function uploadAvatar(
+  userId: string,
+  file: File,
+): Promise<string | null> {
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? 'png'
+  const path = `${userId}/avatar.${ext}`
+  const { error: upErr } = await supabase.storage
+    .from('avatars')
+    .upload(path, file, { upsert: true, cacheControl: '3600' })
+  if (upErr) {
+    console.error('uploadAvatar error', upErr)
+    return null
+  }
+  const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+  // Bust browser cache so the new image shows immediately.
+  return `${data.publicUrl}?v=${Date.now()}`
 }
