@@ -18,6 +18,7 @@ interface GameState {
   opponentRating: number
   ratingChange: number | null
   mode: GameMode | null
+  endReason: 'no_moves' | 'resign' | 'opponent_left' | null
 
   setGame: (payload: Partial<GameState>) => void
   selectCell: (row: number, col: number) => void
@@ -42,6 +43,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   opponentRating: 1200,
   ratingChange: null,
   mode: null,
+  endReason: null,
 
   setGame: (payload) => set((s) => ({ ...s, ...payload })),
 
@@ -85,5 +87,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       opponentName: null,
       ratingChange: null,
       mode: null,
+      endReason: null,
     }),
 }))
