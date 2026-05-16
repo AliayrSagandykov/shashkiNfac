@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getLang } from '../i18n'
 
 export type Level = 'beginner' | 'amateur' | 'experienced' | 'expert'
 
@@ -26,6 +27,7 @@ export interface Profile {
   daily_streak: number
   best_daily_streak: number
   last_active_on: string | null
+  language: 'en' | 'ru'
 }
 
 export async function fetchProfile(userId: string): Promise<Profile | null> {
@@ -57,6 +59,7 @@ export async function createProfile(
     daily_streak: 1,
     best_daily_streak: 1,
     last_active_on: today,
+    language: getLang(),
   }
   const { data, error } = await supabase
     .from('profiles')
@@ -72,7 +75,7 @@ export async function createProfile(
 
 export async function updateProfile(
   userId: string,
-  patch: Partial<Pick<Profile, 'username' | 'bio' | 'avatar_url'>>,
+  patch: Partial<Pick<Profile, 'username' | 'bio' | 'avatar_url' | 'language'>>,
 ): Promise<Profile | null> {
   const { data, error } = await supabase
     .from('profiles')

@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Login from './pages/Login'
 import Home from './pages/Home'
 import Game from './pages/Game'
@@ -8,10 +8,14 @@ import Leaderboard from './pages/Leaderboard'
 import News from './pages/News'
 import { useAuthStore } from './store/authStore'
 import { useProfileStore } from './store/profileStore'
+import { getLang, subscribeLang } from './i18n'
 
 export default function App() {
   const { user, loading, init } = useAuthStore()
   const { load: loadProfile, clear: clearProfile } = useProfileStore()
+  const [lang, setLangState] = useState(getLang())
+
+  useEffect(() => subscribeLang(setLangState), [])
 
   useEffect(() => {
     init()
@@ -34,7 +38,7 @@ export default function App() {
   }
 
   return (
-    <Routes>
+    <Routes key={lang}>
       <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
       <Route path="/" element={user ? <Home /> : <Navigate to="/login" />} />
       <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />

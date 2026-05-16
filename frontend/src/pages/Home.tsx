@@ -219,7 +219,7 @@ export default function Home() {
       <Sidebar />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-6 py-8">
+        <div className="max-w-5xl mx-auto px-4 lg:px-6 pt-16 lg:pt-8 pb-8">
           <div className="mb-6 flex items-center gap-3">
             <Avatar name={username} url={profile?.avatar_url} size={48} />
             <div>

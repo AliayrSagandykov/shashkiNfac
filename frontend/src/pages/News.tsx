@@ -34,7 +34,7 @@ export default function News() {
     <div className="min-h-screen bg-[#0f1419] flex">
       <Sidebar />
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-6 py-8">
+        <div className="max-w-3xl mx-auto px-4 lg:px-6 pt-16 lg:pt-8 pb-8">
           <h1 className="text-white text-3xl font-bold mb-6">{t('news')}</h1>
 
           <div className="space-y-4">
