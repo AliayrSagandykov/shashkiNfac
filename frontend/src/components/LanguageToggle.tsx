@@ -7,11 +7,6 @@ interface Props {
   className?: string
 }
 
-const FLAG: Record<Lang, string> = {
-  en: '🇬🇧',
-  ru: '🇷🇺',
-}
-
 export default function LanguageToggle({ onChange, className }: Props) {
   const [lang, setLangState] = useState<Lang>(getLang())
 
@@ -32,14 +27,13 @@ export default function LanguageToggle({ onChange, className }: Props) {
           key={l}
           type="button"
           onClick={() => pick(l)}
-          className={`px-2.5 py-1 rounded-full font-medium transition-colors flex items-center gap-1 ${
+          className={`px-3 py-1 rounded-full font-semibold uppercase transition-colors ${
             lang === l
               ? 'bg-blue-600 text-white'
               : 'text-gray-400 hover:text-white'
           }`}
         >
-          <span className="text-sm leading-none">{FLAG[l]}</span>
-          <span className="uppercase">{l}</span>
+          {l}
         </button>
       ))}
     </div>

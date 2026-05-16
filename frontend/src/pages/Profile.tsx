@@ -247,7 +247,7 @@ export default function Profile() {
               value={profile.best_rating}
               accent="yellow"
             />
-            <StatTile label={t('streak')} value={profile.win_streak} accent="green" />
+            <StatTile label={t('streak')} value={profile.daily_streak} accent="green" />
             <StatTile
               label={t('games')}
               value={profile.games_played}
