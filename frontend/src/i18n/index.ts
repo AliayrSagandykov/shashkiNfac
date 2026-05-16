@@ -93,6 +93,9 @@ const dict = {
     memberSince: 'Member since',
     wideningRange: 'Widening range (±400)…',
     anyOpponent: 'Matching any opponent…',
+    language: 'Language',
+    english: 'English',
+    russian: 'Русский',
   },
   ru: {
     play: 'Играть',
@@ -188,20 +191,51 @@ const dict = {
     memberSince: 'С нами с',
     wideningRange: 'Расширяем диапазон до ±400…',
     anyOpponent: 'Ищем любого свободного…',
+    language: 'Язык',
+    english: 'English',
+    russian: 'Русский',
   },
 } as const
 
 type Key = keyof typeof dict.en
 
-const lang: 'en' | 'ru' =
-  typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('ru')
-    ? 'ru'
-    : 'en'
+export type Lang = 'en' | 'ru'
+
+const STORAGE_KEY = 'lang'
+
+function detectLang(): Lang {
+  if (typeof window !== 'undefined') {
+    const saved = window.localStorage.getItem(STORAGE_KEY)
+    if (saved === 'en' || saved === 'ru') return saved
+  }
+  if (typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('ru')) {
+    return 'ru'
+  }
+  return 'en'
+}
+
+let currentLang: Lang = detectLang()
+const listeners = new Set<(l: Lang) => void>()
+
+export function getLang(): Lang {
+  return currentLang
+}
+
+export function setLang(next: Lang): void {
+  if (next === currentLang) return
+  currentLang = next
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(STORAGE_KEY, next)
+  }
+  for (const fn of listeners) fn(next)
+}
+
+export function subscribeLang(fn: (l: Lang) => void): () => void {
+  listeners.add(fn)
+  return () => listeners.delete(fn)
+}
 
 export function t(key: Key): string {
-  return dict[lang][key] ?? dict.en[key] ?? key
+  return dict[currentLang][key] ?? dict.en[key] ?? key
 }
 
-export function getLang(): 'en' | 'ru' {
-  return lang
-}

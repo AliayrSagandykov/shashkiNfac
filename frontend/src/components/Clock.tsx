@@ -20,7 +20,7 @@ export default function Clock({ ms, active, unlimited }: Props) {
   const low = ms < 30_000 && !unlimited
   return (
     <div
-      className={`px-4 py-2 rounded-lg font-mono text-2xl font-bold tabular-nums transition-colors ${
+      className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-mono text-xl sm:text-2xl font-bold tabular-nums transition-colors ${
         active
           ? low
             ? 'bg-red-600 text-white'

@@ -7,6 +7,7 @@ import {
   touchDailyStreak,
   updateProfile,
 } from '../services/profile'
+import { setLang } from '../i18n'
 
 interface ProfileState {
   profile: Profile | null
@@ -16,7 +17,7 @@ interface ProfileState {
   onboard: (userId: string, username: string, level: Level) => Promise<boolean>
   applyResult: (result: 'win' | 'loss' | 'draw', newRating: number) => Promise<void>
   update: (
-    patch: Partial<Pick<Profile, 'username' | 'bio' | 'avatar_url'>>,
+    patch: Partial<Pick<Profile, 'username' | 'bio' | 'avatar_url' | 'language'>>,
   ) => Promise<boolean>
   clear: () => void
 }
@@ -38,6 +39,9 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       return
     }
     const bumped = await touchDailyStreak(p)
+    if (bumped.language === 'en' || bumped.language === 'ru') {
+      setLang(bumped.language)
+    }
     set({ profile: bumped, needsOnboarding: false, loading: false })
   },
 

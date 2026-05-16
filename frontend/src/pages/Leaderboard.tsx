@@ -26,7 +26,7 @@ export default function Leaderboard() {
     <div className="min-h-screen bg-[#0f1419] flex">
       <Sidebar />
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-6 py-8">
+        <div className="max-w-3xl mx-auto px-4 lg:px-6 pt-16 lg:pt-8 pb-8">
           <h1 className="text-white text-3xl font-bold mb-1">{t('topPlayers')}</h1>
           <p className="text-gray-500 text-sm mb-6">Top 30 · {t('rating')}</p>
 
@@ -36,7 +36,7 @@ export default function Leaderboard() {
             <div className="text-gray-500 text-sm">{t('noPlayersYet')}</div>
           ) : (
             <div className="bg-[#1f2937] border border-[#374151] rounded-2xl overflow-hidden">
-              <div className="grid grid-cols-[3rem_1fr_5rem_5rem] text-gray-400 text-xs uppercase tracking-wide border-b border-[#374151] px-4 py-2">
+              <div className="grid grid-cols-[2.5rem_1fr_3.5rem_3.5rem] sm:grid-cols-[3rem_1fr_5rem_5rem] text-gray-400 text-xs uppercase tracking-wide border-b border-[#374151] px-4 py-2">
                 <div>{t('rank')}</div>
                 <div>{t('player')}</div>
                 <div className="text-right">{t('games')}</div>
@@ -53,7 +53,7 @@ export default function Leaderboard() {
                   <button
                     key={p.id}
                     onClick={() => navigate(`/u/${p.id}`)}
-                    className={`w-full grid grid-cols-[3rem_1fr_5rem_5rem] items-center px-4 py-3 border-b border-[#374151]/50 last:border-0 text-left hover:bg-[#2a3441] transition-colors ${
+                    className={`w-full grid grid-cols-[2.5rem_1fr_3.5rem_3.5rem] sm:grid-cols-[3rem_1fr_5rem_5rem] items-center px-4 py-3 border-b border-[#374151]/50 last:border-0 text-left hover:bg-[#2a3441] transition-colors ${
                       isMe ? 'bg-blue-900/30' : ''
                     }`}
                   >

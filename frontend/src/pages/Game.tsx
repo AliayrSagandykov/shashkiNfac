@@ -415,7 +415,7 @@ export default function Game() {
 
   return (
     <div className="min-h-screen bg-[#0f1419] flex flex-col lg:flex-row">
-      <main className="flex-1 flex items-center justify-center p-3 lg:p-6">
+      <main className="flex-1 flex items-start lg:items-center justify-center p-2 sm:p-3 lg:p-6">
         <div className="w-full max-w-2xl">
           <div className="flex items-center justify-between mb-3">
             <button
