@@ -5,7 +5,8 @@ import Avatar from '../components/Avatar'
 import { useAuthStore } from '../store/authStore'
 import { useProfileStore } from '../store/profileStore'
 import { fetchProfile, uploadAvatar, type Profile as ProfileT } from '../services/profile'
-import { t, setLang, type Lang } from '../i18n'
+import { t } from '../i18n'
+import LanguageToggle from '../components/LanguageToggle'
 
 function StatTile({
   label,
@@ -48,7 +49,6 @@ export default function Profile() {
   const [editing, setEditing] = useState(false)
   const [draftName, setDraftName] = useState('')
   const [draftBio, setDraftBio] = useState('')
-  const [draftLang, setDraftLang] = useState<Lang>('en')
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -71,7 +71,6 @@ export default function Profile() {
     if (profile && editing) {
       setDraftName(profile.username ?? '')
       setDraftBio(profile.bio ?? '')
-      setDraftLang(profile.language)
     }
   }, [profile, editing])
 
@@ -110,10 +109,8 @@ export default function Profile() {
     const ok = await update({
       username: draftName.trim() || profile.username,
       bio: draftBio.trim() || null,
-      language: draftLang,
     })
     if (ok) {
-      setLang(draftLang)
       setSaveStatus('saved')
       setEditing(false)
       setTimeout(() => setSaveStatus('idle'), 1500)
@@ -145,7 +142,14 @@ export default function Profile() {
       <Sidebar />
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-4 lg:px-6 pt-16 lg:pt-8 pb-8">
-          <div className="bg-[#1f2937] border border-[#374151] rounded-2xl p-6 mb-4">
+          <div className="relative bg-[#1f2937] border border-[#374151] rounded-2xl p-6 mb-4">
+            {viewingOwn && (
+              <div className="absolute top-3 right-3">
+                <LanguageToggle
+                  onChange={(lang) => update({ language: lang }).then(() => undefined)}
+                />
+              </div>
+            )}
             <div className="flex items-start gap-5">
               <div className="relative">
                 <Avatar
@@ -192,25 +196,6 @@ export default function Profile() {
                       placeholder={t('bioPlaceholder')}
                       className="bg-[#0f1e3d] text-gray-200 text-sm py-2 px-3 mt-2 rounded-lg border border-[#374151] focus:outline-none focus:border-blue-500 w-full resize-none"
                     />
-                    <div className="mt-3">
-                      <div className="text-gray-400 text-xs mb-1">{t('language')}</div>
-                      <div className="flex gap-2">
-                        {(['en', 'ru'] as const).map((l) => (
-                          <button
-                            key={l}
-                            type="button"
-                            onClick={() => setDraftLang(l)}
-                            className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                              draftLang === l
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-[#0f1e3d] text-gray-300 hover:bg-[#1a2a4e]'
-                            }`}
-                          >
-                            {l === 'en' ? t('english') : t('russian')}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
                     <div className="flex gap-2 mt-3">
                       <button
                         onClick={handleSave}
