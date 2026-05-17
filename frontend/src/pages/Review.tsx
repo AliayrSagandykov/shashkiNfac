@@ -4,7 +4,14 @@ import Sidebar from '../components/Sidebar'
 import Board from '../components/Board'
 import EvalGraph from '../components/EvalGraph'
 import Avatar from '../components/Avatar'
-import { fetchGame, requestAnalysis, type GameAnalysis, type SavedGame, type MoveClass } from '../services/games'
+import {
+  fetchGame,
+  fetchRecentGames,
+  requestAnalysis,
+  type GameAnalysis,
+  type SavedGame,
+  type MoveClass,
+} from '../services/games'
 import { applyMove, getInitialBoard } from '../engine/rules'
 import { useAuthStore } from '../store/authStore'
 import { t } from '../i18n'
@@ -34,29 +41,89 @@ function notate(m: { from: [number, number]; to: [number, number]; captures: [nu
 
 export default function Review() {
   const navigate = useNavigate()
-  const { gameId } = useParams<{ gameId: string }>()
+  const { gameId: routeGameId } = useParams<{ gameId: string }>()
   const { user } = useAuthStore()
 
+  const [resolvedId, setResolvedId] = useState<string | null>(
+    routeGameId && routeGameId !== 'latest' ? routeGameId : null,
+  )
   const [game, setGame] = useState<SavedGame | null>(null)
   const [analysis, setAnalysis] = useState<GameAnalysis | null>(null)
   const [loading, setLoading] = useState(true)
   const [running, setRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [ply, setPly] = useState(-1) // -1 = initial position
+  const [ply, setPly] = useState(-1)
+
+  // If route is /review/latest, resolve to the user's most recent game.
+  useEffect(() => {
+    if (routeGameId && routeGameId !== 'latest') {
+      setResolvedId(routeGameId)
+      return
+    }
+    if (!user?.id) return
+    let cancelled = false
+    setLoading(true)
+    // Poll a few times — the backend persists after game_end and may not be
+    // ready instantly.
+    let tries = 0
+    const tick = async () => {
+      tries++
+      try {
+        const list = await fetchRecentGames(user.id, 1)
+        if (cancelled) return
+        if (list.length > 0) {
+          setResolvedId(list[0].id)
+          return
+        }
+        if (tries < 5) setTimeout(tick, 800)
+        else {
+          setLoading(false)
+          setError('No saved games yet — backend persistence may not be configured.')
+        }
+      } catch (e) {
+        if (cancelled) return
+        setLoading(false)
+        setError(e instanceof Error ? e.message : 'Failed to load games')
+      }
+    }
+    void tick()
+    return () => {
+      cancelled = true
+    }
+  }, [routeGameId, user?.id])
 
   useEffect(() => {
-    if (!gameId) return
+    if (!resolvedId) return
     setLoading(true)
-    fetchGame(gameId).then((r) => {
-      setLoading(false)
-      if (!r) {
-        setError('Game not found')
-        return
+    setError(null)
+    let cancelled = false
+    ;(async () => {
+      try {
+        const r = await fetchGame(resolvedId)
+        if (cancelled) return
+        if (!r) {
+          setError(
+            'Game not found. Make sure migration 006 is applied and SUPABASE_SERVICE_KEY is set on the backend.',
+          )
+        } else {
+          setGame(r.game)
+          setAnalysis(r.analysis)
+        }
+      } catch (e) {
+        if (cancelled) return
+        setError(
+          e instanceof Error
+            ? `Could not reach backend: ${e.message}`
+            : 'Could not reach backend',
+        )
+      } finally {
+        if (!cancelled) setLoading(false)
       }
-      setGame(r.game)
-      setAnalysis(r.analysis)
-    })
-  }, [gameId])
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [resolvedId])
 
   const boardAtPly = useMemo(() => {
     if (!game) return getInitialBoard()
@@ -72,10 +139,10 @@ export default function Review() {
   const lastMove = ply >= 0 && game ? game.moves[ply] : null
 
   const handleRun = async () => {
-    if (!gameId) return
+    if (!resolvedId) return
     setRunning(true)
     setError(null)
-    const result = await requestAnalysis(gameId, user?.id)
+    const result = await requestAnalysis(resolvedId, user?.id)
     setRunning(false)
     if (!result) setError('Analysis failed')
     else setAnalysis(result)
@@ -85,7 +152,12 @@ export default function Review() {
     return (
       <div className="min-h-screen bg-app flex">
         <Sidebar />
-        <main className="flex-1 flex items-center justify-center text-muted">…</main>
+        <main className="flex-1 flex items-center justify-center text-muted">
+          <div className="text-center">
+            <div className="text-3xl mb-2 animate-pulse">⏳</div>
+            <div className="text-sm">Loading game…</div>
+          </div>
+        </main>
       </div>
     )
   }
@@ -94,8 +166,18 @@ export default function Review() {
     return (
       <div className="min-h-screen bg-app flex">
         <Sidebar />
-        <main className="flex-1 flex items-center justify-center text-muted">
-          {error ?? 'Not found'}
+        <main className="flex-1 flex items-center justify-center p-6">
+          <div className="bg-card border border-line rounded-2xl p-6 max-w-md text-center">
+            <div className="text-4xl mb-3">🔌</div>
+            <div className="text-fg text-lg font-semibold mb-2">Can't load this game</div>
+            <p className="text-muted text-sm whitespace-pre-line">{error ?? 'Not found'}</p>
+            <button
+              onClick={() => navigate('/')}
+              className="mt-4 bg-elev hover:bg-hover text-fg px-4 py-2 rounded-lg text-sm"
+            >
+              {t('home_')}
+            </button>
+          </div>
         </main>
       </div>
     )
