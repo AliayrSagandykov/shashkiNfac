@@ -14,7 +14,17 @@ function materialEval(board: Board): number {
       const dir = p.player === 'white' ? 1 : -1
       // Small advancement bonus for men (encourage progress toward promotion).
       const advance = p.type === 'man' ? (p.player === 'white' ? r : 9 - r) * 2 : 0
-      score += dir * (base + advance)
+      // Edge penalty: men stuck on the side files have fewer captures and
+      // can never become a king on the wrong side.
+      const edge = p.type === 'man' && (c === 0 || c === 9) ? -4 : 0
+      // Back-rank guard: men still on their starting back rank block the
+      // opponent's promotion squares; small bonus.
+      const guard =
+        p.type === 'man' &&
+        ((p.player === 'white' && r === 0) || (p.player === 'black' && r === 9))
+          ? 6
+          : 0
+      score += dir * (base + advance + edge + guard)
     }
   }
   return score
@@ -36,17 +46,37 @@ function hash(board: Board, toMove: Player): string {
   return s
 }
 
+function moveEq(a: Move, b: Move): boolean {
+  return (
+    a.from[0] === b.from[0] &&
+    a.from[1] === b.from[1] &&
+    a.to[0] === b.to[0] &&
+    a.to[1] === b.to[1]
+  )
+}
+
 type TTFlag = 'exact' | 'lower' | 'upper'
 interface TTEntry {
   depth: number
   score: number
   flag: TTFlag
+  best?: Move
 }
 
 interface SearchCtx {
   tt: Map<string, TTEntry>
   nodes: number
   deadline: number
+}
+
+function orderMoves(moves: Move[], ttMove: Move | undefined): Move[] {
+  if (!ttMove) return moves
+  const idx = moves.findIndex((m) => moveEq(m, ttMove))
+  if (idx <= 0) return moves
+  const ordered = moves.slice()
+  const [m] = ordered.splice(idx, 1)
+  ordered.unshift(m)
+  return ordered
 }
 
 function negamax(
@@ -76,6 +106,8 @@ function negamax(
   // Transposition table lookup with bound-aware semantics. The key is the
   // position only — the entry remembers the depth and bound type, so an
   // entry from a deeper search can still be reused at a shallower one.
+  // The stored best move is used for move ordering even when the cached
+  // score isn't usable for the current window.
   const alphaOrig = alpha
   const key = hash(board, toMove)
   const cached = ctx.tt.get(key)
@@ -88,17 +120,22 @@ function negamax(
     if (alpha >= beta) return cached.score
   }
 
-  const moves = getLegalMoves(board, toMove)
-  if (moves.length === 0) {
+  const rawMoves = getLegalMoves(board, toMove)
+  if (rawMoves.length === 0) {
     return -(WIN - (50 - depth))
   }
+  const moves = orderMoves(rawMoves, cached?.best)
 
   const next: Player = toMove === 'white' ? 'black' : 'white'
   let best = -Infinity
+  let bestMove: Move | undefined
   for (const move of moves) {
     const nb = applyMove(board, move)
     const score = -negamax(nb, depth - 1, -beta, -alpha, next, ctx)
-    if (score > best) best = score
+    if (score > best) {
+      best = score
+      bestMove = move
+    }
     if (best > alpha) alpha = best
     if (alpha >= beta) break
   }
@@ -107,7 +144,7 @@ function negamax(
   if (best <= alphaOrig) flag = 'upper'
   else if (best >= beta) flag = 'lower'
   else flag = 'exact'
-  ctx.tt.set(key, { depth, score: best, flag })
+  ctx.tt.set(key, { depth, score: best, flag, best: bestMove })
   return best
 }
 
@@ -118,9 +155,12 @@ export function createSharedTT(): SharedTT {
 
 /**
  * Returns the best move and its score (in centipawns, from `toMove`'s view)
- * at the given search depth, with an overall wall-time budget. Pass a
- * `sharedTT` to reuse transposition data across calls (e.g. when analysing
- * a full game move-by-move).
+ * up to the given target depth, with an overall wall-time budget. Uses
+ * iterative deepening: each shallower pass seeds the TT with a best-move
+ * which the next deeper pass tries first, so alpha-beta prunes far more
+ * effectively. If time runs out before the target depth completes, the
+ * deepest *completed* iteration's result is returned. Pass a `sharedTT`
+ * to reuse transposition data across calls.
  */
 export function searchPosition(
   board: Board,
@@ -148,20 +188,43 @@ export function searchPosition(
     return { bestMove: moves[0], score }
   }
 
-  // Alpha-beta at the root too, so the root benefits from pruning.
   let bestMove: Move = moves[0]
   let bestScore = -Infinity
-  let alpha = -Infinity
-  const beta = Infinity
+  let prevBest: Move | undefined
 
-  for (const move of moves) {
-    const nb = applyMove(board, move)
-    const score = -negamax(nb, depth - 1, -beta, -alpha, next, ctx)
-    if (score > bestScore) {
-      bestScore = score
-      bestMove = move
+  for (let d = 1; d <= depth; d++) {
+    // Always finish depth 1 (cheap, always useful); for deeper iterations
+    // bail before starting if we've blown the budget.
+    if (d > 1 && Date.now() > ctx.deadline) break
+
+    const ordered = orderMoves(moves, prevBest)
+    let alpha = -Infinity
+    const beta = Infinity
+    let iterBest: Move = ordered[0]
+    let iterScore = -Infinity
+    let timedOut = false
+
+    for (const move of ordered) {
+      if (d > 1 && Date.now() > ctx.deadline) {
+        timedOut = true
+        break
+      }
+      const nb = applyMove(board, move)
+      const score = -negamax(nb, d - 1, -beta, -alpha, next, ctx)
+      if (score > iterScore) {
+        iterScore = score
+        iterBest = move
+      }
+      if (iterScore > alpha) alpha = iterScore
     }
-    if (bestScore > alpha) alpha = bestScore
+
+    if (timedOut) break
+    bestMove = iterBest
+    bestScore = iterScore
+    prevBest = iterBest
+
+    // Stop early on confirmed forced mate — deeper search won't change it.
+    if (Math.abs(bestScore) > WIN - 100) break
   }
 
   return { bestMove, score: bestScore }
