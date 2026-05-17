@@ -64,9 +64,11 @@ export async function analyzeGame(
   depth: number,
   timeBudgetMs = 2000,
   progress?: ProgressCb,
+  totalBudgetMs = Number.POSITIVE_INFINITY,
 ): Promise<GameAnalysis> {
   let board: Board = getInitialBoard()
   let toMove = 'black' as Player // international draughts starts with black
+  const deadline = Date.now() + totalBudgetMs
 
   const out: MoveAnalysis[] = []
   const evalGraph: number[] = []
@@ -89,8 +91,15 @@ export async function analyzeGame(
 
     const nextBoard = applyMove(board, played)
     const nextToMove: Player = toMove === 'white' ? 'black' : 'white'
-    // Eval the resulting position from the OTHER player's perspective, then flip.
-    const after = searchPosition(nextBoard, nextToMove, depth, timeBudgetMs, tt)
+    // Shrink the per-ply budget as we approach the overall deadline so the
+    // total analysis always finishes before the hosting platform's request
+    // timeout. Once we run out of time, fall back to a depth-1 search so
+    // the remaining plies still get *some* eval.
+    const remaining = deadline - Date.now()
+    const pliesLeft = moves.length - i
+    const perPlyMs = Math.max(50, Math.min(timeBudgetMs, Math.floor(remaining / pliesLeft)))
+    const effectiveDepth = remaining <= 0 ? 1 : depth
+    const after = searchPosition(nextBoard, nextToMove, effectiveDepth, perPlyMs, tt)
     const afterWhite = nextToMove === 'white' ? after.score : -after.score
 
     // Loss is measured for the player who just moved, in their POV.

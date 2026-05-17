@@ -3,8 +3,12 @@ import { getSupabase } from '../services/supabase'
 import { analyzeGame } from '../analysis/analyzer'
 import type { Move } from '../engine/rules'
 
-const ANALYSIS_DEPTH_DEFAULT = 8
-const ANALYSIS_TIME_BUDGET_PER_PLY = 1500
+const ANALYSIS_DEPTH_DEFAULT = 6
+const ANALYSIS_TIME_BUDGET_PER_PLY = 600
+// Render free tier kills any HTTP request that takes more than ~100s, with
+// no response (so the browser sees a missing CORS header). Stop analysing
+// before that so we always return *something*.
+const ANALYSIS_TOTAL_BUDGET_MS = 75_000
 
 // In-flight analyses (gameId -> promise) so duplicate clicks share work.
 const inFlight = new Map<string, Promise<unknown>>()
@@ -75,7 +79,13 @@ export function registerGameRoutes(app: Express): void {
         if (gameErr) throw new Error(gameErr.message)
         if (!game) throw new Error('not_found')
         const moves = (game.moves as Move[]) ?? []
-        const analysis = await analyzeGame(moves, depth, ANALYSIS_TIME_BUDGET_PER_PLY)
+        const analysis = await analyzeGame(
+          moves,
+          depth,
+          ANALYSIS_TIME_BUDGET_PER_PLY,
+          undefined,
+          ANALYSIS_TOTAL_BUDGET_MS,
+        )
         const { error: saveErr } = await supabase
           .from('match_analyses')
           .insert({ match_id: gameId, depth, data: analysis })
