@@ -50,17 +50,25 @@ export function setupGameHandlers(socket: Socket, io: Server, matchmaker: Matchm
     if (!color || color !== room.turn) return
 
     const legalMoves = getLegalMoves(room.board, room.turn)
-    const isLegal = legalMoves.some(
+    const submittedCaps = (data.move.captures ?? [])
+      .map(([r, c]) => `${r},${c}`)
+      .sort()
+      .join('|')
+    const legal = legalMoves.find(
       (m) =>
         m.from[0] === data.move.from[0] &&
         m.from[1] === data.move.from[1] &&
         m.to[0] === data.move.to[0] &&
-        m.to[1] === data.move.to[1],
+        m.to[1] === data.move.to[1] &&
+        m.captures.map(([r, c]) => `${r},${c}`).sort().join('|') === submittedCaps,
     )
-    if (!isLegal) {
+    if (!legal) {
       socket.emit('move_rejected', { reason: 'illegal_move' })
       return
     }
+    // Use the server's authoritative move (not the client's payload) so
+    // captures/king-flag can never be tampered with.
+    data.move = legal
 
     const now = Date.now()
     const elapsed = now - room.lastMoveAt
