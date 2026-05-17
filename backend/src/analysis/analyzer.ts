@@ -1,6 +1,6 @@
 import type { Board, Move, Player } from '../engine/rules'
 import { applyMove, getInitialBoard } from '../engine/rules'
-import { searchPosition } from '../engine/ai'
+import { searchPosition, createSharedTT } from '../engine/ai'
 
 export type MoveClass = 'best' | 'good' | 'inaccuracy' | 'mistake' | 'blunder'
 
@@ -71,20 +71,26 @@ export async function analyzeGame(
   const out: MoveAnalysis[] = []
   const evalGraph: number[] = []
 
-  // Initial position eval.
-  const initEval = searchPosition(board, toMove, Math.min(depth, 6), timeBudgetMs)
-  const initScoreWhite = toMove === 'white' ? initEval.score : -initEval.score
-  evalGraph.push(clamp(initScoreWhite, -2000, 2000))
+  // Shared TT across all searches in the game: transpositions reached
+  // through different move orders only get searched once.
+  const tt = createSharedTT()
+
+  // Initial position eval; we'll keep `current` rolling so each move only
+  // needs a single fresh search (for the position AFTER the played move),
+  // because that result becomes the BEFORE search for the next move.
+  let current = searchPosition(board, toMove, Math.min(depth, 6), timeBudgetMs, tt)
+  let currentWhite = toMove === 'white' ? current.score : -current.score
+  evalGraph.push(clamp(currentWhite, -2000, 2000))
 
   for (let i = 0; i < moves.length; i++) {
     const played = moves[i]
-    const before = searchPosition(board, toMove, depth, timeBudgetMs)
-    const beforeWhite = toMove === 'white' ? before.score : -before.score
+    const beforeWhite = currentWhite
+    const beforeBest = current.bestMove
 
     const nextBoard = applyMove(board, played)
     const nextToMove: Player = toMove === 'white' ? 'black' : 'white'
     // Eval the resulting position from the OTHER player's perspective, then flip.
-    const after = searchPosition(nextBoard, nextToMove, depth, timeBudgetMs)
+    const after = searchPosition(nextBoard, nextToMove, depth, timeBudgetMs, tt)
     const afterWhite = nextToMove === 'white' ? after.score : -after.score
 
     // Loss is measured for the player who just moved, in their POV.
@@ -95,7 +101,7 @@ export async function analyzeGame(
       ply: i,
       player: toMove,
       played,
-      best: before.bestMove,
+      best: beforeBest,
       evalBeforeWhite: clamp(beforeWhite, -2000, 2000),
       evalAfterWhite: clamp(afterWhite, -2000, 2000),
       loss,
@@ -105,6 +111,8 @@ export async function analyzeGame(
 
     board = nextBoard
     toMove = nextToMove
+    current = after
+    currentWhite = afterWhite
 
     if (progress) progress(i + 1, moves.length)
     // Yield control occasionally so the event loop can serve other requests.
