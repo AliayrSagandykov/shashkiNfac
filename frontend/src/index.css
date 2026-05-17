@@ -2,14 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --app: 15 20 25;
+  --sidebar: 17 24 39;
+  --card: 31 41 55;
+  --card2: 22 33 62;
+  --field: 15 30 61;
+  --elev: 55 65 81;
+  --hover: 42 52 65;
+  --line: 55 65 81;
+  --line2: 15 52 96;
+  --fg: 255 255 255;
+  --fg2: 209 213 219;
+  --muted: 156 163 175;
+  --faint: 107 114 128;
+}
+
+:root[data-theme='light'] {
+  --app: 243 244 246;
+  --sidebar: 255 255 255;
+  --card: 255 255 255;
+  --card2: 249 250 251;
+  --field: 243 244 246;
+  --elev: 229 231 235;
+  --hover: 229 231 235;
+  --line: 229 231 235;
+  --line2: 209 213 219;
+  --fg: 17 24 39;
+  --fg2: 55 65 81;
+  --muted: 107 114 128;
+  --faint: 156 163 175;
+}
+
 * {
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
-  background: #1a1a2e;
-  color: #e0e0e0;
+  background: rgb(var(--app));
+  color: rgb(var(--fg));
   font-family: 'Segoe UI', system-ui, sans-serif;
   min-height: 100vh;
 }

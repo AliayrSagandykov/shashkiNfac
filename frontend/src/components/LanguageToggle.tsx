@@ -20,7 +20,7 @@ export default function LanguageToggle({ onChange, className }: Props) {
 
   return (
     <div
-      className={`inline-flex items-center gap-0.5 p-1 rounded-full bg-[#0f1e3d] border border-[#374151] text-xs ${className ?? ''}`}
+      className={`inline-flex items-center gap-0.5 p-1 rounded-full bg-field border border-line text-xs ${className ?? ''}`}
     >
       {(['en', 'ru'] as const).map((l) => (
         <button
@@ -29,8 +29,8 @@ export default function LanguageToggle({ onChange, className }: Props) {
           onClick={() => pick(l)}
           className={`px-3 py-1 rounded-full font-semibold uppercase transition-colors ${
             lang === l
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-400 hover:text-white'
+              ? 'bg-blue-600 text-fg'
+              : 'text-muted hover:text-fg'
           }`}
         >
           {l}

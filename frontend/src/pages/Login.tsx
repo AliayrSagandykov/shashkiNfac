@@ -27,12 +27,12 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#1a1a2e]">
-      <div className="w-full max-w-md p-8 bg-[#16213e] rounded-2xl shadow-2xl border border-[#0f3460]">
+    <div className="min-h-screen flex items-center justify-center bg-app">
+      <div className="w-full max-w-md p-8 bg-card2 rounded-2xl shadow-2xl border border-line2">
         <div className="text-center mb-8">
           <div className="text-6xl mb-4">♟</div>
-          <h1 className="text-3xl font-bold text-white">Checkers</h1>
-          <p className="text-gray-400 mt-2">Play international draughts online</p>
+          <h1 className="text-3xl font-bold text-fg">Checkers</h1>
+          <p className="text-muted mt-2">Play international draughts online</p>
         </div>
 
         <button
@@ -53,7 +53,7 @@ export default function Login() {
             <div className="w-full border-t border-gray-600"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-[#16213e] text-gray-400">or</span>
+            <span className="px-2 bg-card2 text-muted">or</span>
           </div>
         </div>
 
@@ -63,7 +63,7 @@ export default function Login() {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full bg-[#0f3460] text-white placeholder-gray-400 py-3 px-4 rounded-xl border border-[#1a4a7a] focus:outline-none focus:border-blue-500"
+            className="w-full bg-card2 text-fg placeholder-muted py-3 px-4 rounded-xl border border-line2 focus:outline-none focus:border-blue-500"
             required
           />
           <input
@@ -71,20 +71,20 @@ export default function Login() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-[#0f3460] text-white placeholder-gray-400 py-3 px-4 rounded-xl border border-[#1a4a7a] focus:outline-none focus:border-blue-500"
+            className="w-full bg-card2 text-fg placeholder-muted py-3 px-4 rounded-xl border border-line2 focus:outline-none focus:border-blue-500"
             required
           />
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-xl font-semibold transition-colors disabled:opacity-50"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-fg py-3 px-6 rounded-xl font-semibold transition-colors disabled:opacity-50"
           >
             {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
           </button>
         </form>
 
-        <p className="text-center text-gray-400 mt-3 text-sm">
+        <p className="text-center text-muted mt-3 text-sm">
           {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
           <button
             onClick={() => setIsSignUp(!isSignUp)}
@@ -97,7 +97,7 @@ export default function Login() {
         <div className="mt-4 pt-4 border-t border-gray-700">
           <button
             onClick={continueAsGuest}
-            className="w-full text-gray-400 hover:text-white py-2 transition-colors text-sm"
+            className="w-full text-muted hover:text-fg py-2 transition-colors text-sm"
           >
             Continue as Guest (limited features)
           </button>

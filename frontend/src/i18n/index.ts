@@ -96,6 +96,9 @@ const dict = {
     language: 'Language',
     english: 'English',
     russian: 'Русский',
+    theme: 'Theme',
+    themeDark: 'Dark',
+    themeLight: 'Light',
   },
   ru: {
     play: 'Играть',
@@ -194,6 +197,9 @@ const dict = {
     language: 'Язык',
     english: 'English',
     russian: 'Русский',
+    theme: 'Тема',
+    themeDark: 'Тёмная',
+    themeLight: 'Светлая',
   },
 } as const
 

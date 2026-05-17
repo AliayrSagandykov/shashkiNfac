@@ -31,28 +31,28 @@ export default function News() {
   const lang = getLang()
 
   return (
-    <div className="min-h-screen bg-[#0f1419] flex">
+    <div className="min-h-screen bg-app flex">
       <Sidebar />
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-4 lg:px-6 pt-16 lg:pt-8 pb-8">
-          <h1 className="text-white text-3xl font-bold mb-6">{t('news')}</h1>
+          <h1 className="text-fg text-3xl font-bold mb-6">{t('news')}</h1>
 
           <div className="space-y-4">
             {POSTS.map((post) => (
               <article
                 key={post.id}
-                className="bg-[#1f2937] border border-[#374151] rounded-2xl p-6"
+                className="bg-card border border-line rounded-2xl p-6"
               >
                 <div className="flex items-center gap-3 mb-3">
                   <div className="text-3xl">{post.emoji}</div>
                   <div>
-                    <h2 className="text-white text-xl font-bold leading-tight">
+                    <h2 className="text-fg text-xl font-bold leading-tight">
                       {post.title[lang]}
                     </h2>
-                    <div className="text-gray-500 text-xs">{post.date}</div>
+                    <div className="text-faint text-xs">{post.date}</div>
                   </div>
                 </div>
-                <div className="text-gray-200 whitespace-pre-line leading-relaxed">
+                <div className="text-fg2 whitespace-pre-line leading-relaxed">
                   {post.body[lang]}
                 </div>
               </article>

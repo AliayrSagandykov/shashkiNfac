@@ -24,7 +24,7 @@ export default function Timer({ active, initialSeconds = 600, onExpire }: Props)
   const isLow = seconds < 30
 
   return (
-    <span className={`font-mono font-bold ${isLow ? 'text-red-400' : 'text-white'}`}>
+    <span className={`font-mono font-bold ${isLow ? 'text-red-400' : 'text-fg'}`}>
       {m}:{s.toString().padStart(2, '0')}
     </span>
   )

@@ -3,35 +3,42 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { t } from '../i18n'
 import { useAuthStore } from '../store/authStore'
 import { useProfileStore } from '../store/profileStore'
+import ThemeToggle from './ThemeToggle'
 
 interface Item {
   to: string
   icon: string
-  labelKey: 'play' | 'leaderboard' | 'news' | 'profile'
+  labelKey: 'play' | 'leaderboard' | 'news' | 'profile' | 'signUp'
 }
-
-const items: Item[] = [
-  { to: '/', icon: '▶', labelKey: 'play' },
-  { to: '/leaderboard', icon: '🏆', labelKey: 'leaderboard' },
-  { to: '/news', icon: '📰', labelKey: 'news' },
-  { to: '/profile', icon: '👤', labelKey: 'profile' },
-]
 
 export default function Sidebar() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, signOut } = useAuthStore()
-  const { profile, clear } = useProfileStore()
+  const { profile, clear, update } = useProfileStore()
   const [open, setOpen] = useState(false)
+
+  const isGuest = !!user?.id?.startsWith('guest-')
+
+  const items: Item[] = isGuest
+    ? [
+        { to: '/', icon: '▶', labelKey: 'play' },
+        { to: '/signup', icon: '🪪', labelKey: 'signUp' },
+        { to: '/news', icon: '📰', labelKey: 'news' },
+      ]
+    : [
+        { to: '/', icon: '▶', labelKey: 'play' },
+        { to: '/leaderboard', icon: '🏆', labelKey: 'leaderboard' },
+        { to: '/news', icon: '📰', labelKey: 'news' },
+        { to: '/profile', icon: '👤', labelKey: 'profile' },
+      ]
 
   const username = profile?.username ?? user?.user_metadata?.username ?? user?.email ?? 'Player'
 
-  // Close drawer on route change.
   useEffect(() => {
     setOpen(false)
   }, [location.pathname])
 
-  // Lock body scroll while drawer is open on mobile.
   useEffect(() => {
     if (open) document.body.style.overflow = 'hidden'
     else document.body.style.overflow = ''
@@ -46,19 +53,23 @@ export default function Sidebar() {
     navigate('/login')
   }
 
+  const handleSignUpClick = async () => {
+    await signOut()
+    clear()
+    navigate('/login')
+  }
+
   return (
     <>
-      {/* Mobile burger button */}
       <button
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Menu"
-        className="lg:hidden fixed top-3 left-3 z-30 w-10 h-10 rounded-lg bg-[#1f2937] border border-[#374151] text-white flex items-center justify-center text-xl shadow-lg hover:bg-[#2a3441]"
+        className="lg:hidden fixed top-3 left-3 z-30 w-10 h-10 rounded-lg bg-card border border-line text-fg flex items-center justify-center text-xl shadow-lg hover:bg-hover"
       >
         ☰
       </button>
 
-      {/* Backdrop */}
       {open && (
         <div
           onClick={() => setOpen(false)}
@@ -70,70 +81,93 @@ export default function Sidebar() {
         className={`
           fixed lg:sticky top-0 left-0 z-50 lg:z-auto
           h-screen w-64 lg:w-56 shrink-0
-          bg-[#111827] border-r border-[#1f2937]
+          bg-sidebar border-r border-line
           flex flex-col
           transition-transform duration-200 ease-out
           ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
-        <div className="px-5 py-4 border-b border-[#1f2937] flex items-center justify-between">
-          <div className="flex items-center gap-2 text-white font-bold text-lg">
+        <div className="px-5 py-4 border-b border-line flex items-center justify-between">
+          <div className="flex items-center gap-2 text-fg font-bold text-lg">
             <span className="text-2xl">♟</span>
             <span>Checkers</span>
           </div>
           <button
             onClick={() => setOpen(false)}
             aria-label="Close"
-            className="lg:hidden text-gray-400 hover:text-white text-2xl leading-none"
+            className="lg:hidden text-muted hover:text-fg text-2xl leading-none"
           >
             ×
           </button>
         </div>
 
         <nav className="flex-1 py-3 space-y-0.5 overflow-y-auto">
-          {items.map((it) => (
-            <NavLink
-              key={it.to}
-              to={it.to}
-              end
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-5 py-3 text-sm transition-colors ${
-                  isActive
-                    ? 'bg-[#1f2937] text-white border-l-2 border-blue-500'
-                    : 'text-gray-400 hover:text-white hover:bg-[#1a2333]'
-                }`
-              }
-            >
-              <span className="text-lg w-5 text-center">{it.icon}</span>
-              <span className="font-medium">{t(it.labelKey)}</span>
-            </NavLink>
-          ))}
+          {items.map((it) =>
+            it.labelKey === 'signUp' ? (
+              <button
+                key={it.to}
+                onClick={handleSignUpClick}
+                className="w-full flex items-center gap-3 px-5 py-3 text-sm text-muted hover:text-fg hover:bg-hover transition-colors"
+              >
+                <span className="text-lg w-5 text-center">{it.icon}</span>
+                <span className="font-medium">{t('signUp')}</span>
+              </button>
+            ) : (
+              <NavLink
+                key={it.to}
+                to={it.to}
+                end
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-5 py-3 text-sm transition-colors ${
+                    isActive
+                      ? 'bg-card text-fg border-l-2 border-blue-500'
+                      : 'text-muted hover:text-fg hover:bg-hover'
+                  }`
+                }
+              >
+                <span className="text-lg w-5 text-center">{it.icon}</span>
+                <span className="font-medium">{t(it.labelKey)}</span>
+              </NavLink>
+            ),
+          )}
         </nav>
 
-        <div className="border-t border-[#1f2937] p-3">
+        <div className="border-t border-line p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => (isGuest ? handleSignUpClick() : navigate('/profile'))}
+              className="flex-1 flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-hover transition-colors text-left"
+            >
+              <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-fg font-bold text-sm shrink-0">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  username.charAt(0).toUpperCase()
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-fg text-sm font-medium truncate">
+                  {isGuest ? 'Guest' : username}
+                </div>
+                {profile && !isGuest && (
+                  <div className="text-muted text-xs">⭐ {profile.rating}</div>
+                )}
+                {isGuest && <div className="text-muted text-xs">→ {t('signUp')}</div>}
+              </div>
+            </button>
+            <ThemeToggle
+              onChange={
+                profile
+                  ? (next) => update({ theme: next }).then(() => undefined)
+                  : undefined
+              }
+            />
+          </div>
           <button
-            onClick={() => navigate('/profile')}
-            className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#1a2333] transition-colors text-left"
+            onClick={isGuest ? handleSignUpClick : handleSignOut}
+            className="w-full text-faint hover:text-fg text-xs px-2 py-1.5 transition-colors text-left"
           >
-            <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-              ) : (
-                username.charAt(0).toUpperCase()
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-white text-sm font-medium truncate">{username}</div>
-              {profile && (
-                <div className="text-gray-400 text-xs">⭐ {profile.rating}</div>
-              )}
-            </div>
-          </button>
-          <button
-            onClick={handleSignOut}
-            className="w-full mt-2 text-gray-500 hover:text-white text-xs px-2 py-1.5 transition-colors text-left"
-          >
-            {t('signOut')}
+            {isGuest ? t('signUp') : t('signOut')}
           </button>
         </div>
       </aside>

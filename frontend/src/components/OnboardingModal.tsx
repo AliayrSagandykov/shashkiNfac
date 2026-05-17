@@ -42,19 +42,19 @@ export default function OnboardingModal({ defaultUsername, onSubmit }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#16213e] border border-[#0f3460] rounded-2xl max-w-md w-full p-8">
+      <div className="bg-card2 border border-line2 rounded-2xl max-w-md w-full p-8">
         <div className="text-center mb-6">
           <div className="text-5xl mb-3">♟</div>
-          <h2 className="text-white text-2xl font-bold">{t('onboardingTitle')}</h2>
-          <p className="text-gray-400 mt-1 text-sm">{t('onboardingSub')}</p>
+          <h2 className="text-fg text-2xl font-bold">{t('onboardingTitle')}</h2>
+          <p className="text-muted mt-1 text-sm">{t('onboardingSub')}</p>
         </div>
 
-        <label className="block text-gray-400 text-sm mb-2">Username</label>
+        <label className="block text-muted text-sm mb-2">Username</label>
         <input
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           maxLength={20}
-          className="w-full bg-[#0f3460] text-white placeholder-gray-400 py-3 px-4 rounded-xl border border-[#1a4a7a] focus:outline-none focus:border-blue-500 mb-5"
+          className="w-full bg-card2 text-fg placeholder-muted py-3 px-4 rounded-xl border border-line2 focus:outline-none focus:border-blue-500 mb-5"
         />
 
         <div className="space-y-2 mb-6">
@@ -64,12 +64,12 @@ export default function OnboardingModal({ defaultUsername, onSubmit }: Props) {
               onClick={() => setLevel(l)}
               className={`w-full text-left px-4 py-3 rounded-xl border transition-colors flex items-center justify-between ${
                 level === l
-                  ? 'bg-blue-600 border-blue-400 text-white'
-                  : 'bg-[#0f1e3d] border-[#0f3460] text-gray-200 hover:border-blue-500'
+                  ? 'bg-blue-600 border-blue-400 text-fg'
+                  : 'bg-field border-line2 text-fg2 hover:border-blue-500'
               }`}
             >
               <span className="font-semibold">{labelFor(l)}</span>
-              <span className={`text-sm ${level === l ? 'text-blue-100' : 'text-gray-400'}`}>
+              <span className={`text-sm ${level === l ? 'text-blue-100' : 'text-muted'}`}>
                 {t('starts')} {LEVEL_STARTING_RATING[l]}
               </span>
             </button>
@@ -85,7 +85,7 @@ export default function OnboardingModal({ defaultUsername, onSubmit }: Props) {
         <button
           onClick={handle}
           disabled={submitting || !username.trim()}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-3 rounded-xl font-semibold transition-colors"
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-fg py-3 rounded-xl font-semibold transition-colors"
         >
           {submitting ? '…' : t('confirm')}
         </button>
