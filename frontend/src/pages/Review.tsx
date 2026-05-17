@@ -107,7 +107,10 @@ export default function Review() {
           )
         } else {
           setGame(r.game)
-          setAnalysis(r.analysis)
+          // Guard against legacy/malformed analysis rows so a bad shape
+          // doesn't crash the renderer and black out the page.
+          const a = r.analysis
+          setAnalysis(a && Array.isArray(a.moves) && Array.isArray(a.evalGraph) ? a : null)
         }
       } catch (e) {
         if (cancelled) return

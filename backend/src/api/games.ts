@@ -46,12 +46,12 @@ export function registerGameRoutes(app: Express): void {
       .maybeSingle()
     if (error) return res.status(500).json({ error: error.message })
     if (!game) return res.status(404).json({ error: 'not_found' })
-    const { data: analysis } = await supabase
+    const { data: analysisRow } = await supabase
       .from('match_analyses')
-      .select('depth, data, created_at')
+      .select('data')
       .eq('match_id', req.params.id)
       .maybeSingle()
-    res.json({ game, analysis: analysis ?? null })
+    res.json({ game, analysis: analysisRow?.data ?? null })
   })
 
   app.post('/api/games/:id/analyze', async (req: Request, res: Response) => {
@@ -59,14 +59,16 @@ export function registerGameRoutes(app: Express): void {
     if (!supabase) return res.status(503).json({ error: 'storage_unavailable' })
     const gameId = req.params.id
 
-    // Already analyzed?
+    // Already analyzed? The actual analysis is stored in the `data` jsonb
+    // column; the supabase row wraps it, so unwrap before returning or the
+    // frontend will get {data, ...} and crash on analysis.moves.length.
     const existing = await supabase
       .from('match_analyses')
-      .select('depth, data, created_at')
+      .select('data')
       .eq('match_id', gameId)
       .maybeSingle()
     if (existing.data) {
-      return res.json({ analysis: existing.data, cached: true })
+      return res.json({ analysis: existing.data.data, cached: true })
     }
 
     // Already running? Register the in-flight slot BEFORE any awaits below
