@@ -68,7 +68,38 @@ export function registerGameRoutes(app: Express): void {
       .eq('match_id', gameId)
       .maybeSingle()
     if (existing.data) {
+      // Re-opening an already analysed game doesn't cost a quota slot.
       return res.json({ analysis: existing.data.data, cached: true })
+    }
+
+    // Quota gate for a fresh analysis. Premium users with a valid
+    // `premium_until` (NULL = lifetime) bypass the gate; free users get
+    // one fresh analysis per rolling 24 hours. Cached re-opens above
+    // bypass this entirely.
+    const userId = String(req.body?.userId ?? '')
+    if (userId) {
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('is_premium, premium_until, last_analysis_at')
+        .eq('id', userId)
+        .maybeSingle()
+      if (prof) {
+        const now = Date.now()
+        const premiumActive =
+          prof.is_premium &&
+          (prof.premium_until === null || new Date(prof.premium_until).getTime() > now)
+        if (!premiumActive) {
+          const last = prof.last_analysis_at ? new Date(prof.last_analysis_at).getTime() : 0
+          if (now - last < 24 * 60 * 60 * 1000) {
+            const nextAt = new Date(last + 24 * 60 * 60 * 1000).toISOString()
+            return res.status(402).json({
+              error: 'quota_exceeded',
+              reason: 'free_daily_limit',
+              nextAvailableAt: nextAt,
+            })
+          }
+        }
+      }
     }
 
     // Already running? Register the in-flight slot BEFORE any awaits below
@@ -103,10 +134,10 @@ export function registerGameRoutes(app: Express): void {
 
     try {
       const analysis = await promise
-      // Bump quota for the requester if they passed userId.
-      const userId = String(req.body?.userId ?? '')
+      // Record this fresh analysis against the requester: bump the lifetime
+      // counter and stamp last_analysis_at so the daily quota for free users
+      // works. Best-effort — failures don't block the response.
       if (userId) {
-        // Best-effort increment; we don't have a stored function so do read/write.
         const { data: prof } = await supabase
           .from('profiles')
           .select('analyses_used')
@@ -115,7 +146,10 @@ export function registerGameRoutes(app: Express): void {
         if (prof) {
           await supabase
             .from('profiles')
-            .update({ analyses_used: (prof.analyses_used ?? 0) + 1 })
+            .update({
+              analyses_used: (prof.analyses_used ?? 0) + 1,
+              last_analysis_at: new Date().toISOString(),
+            })
             .eq('id', userId)
         }
       }

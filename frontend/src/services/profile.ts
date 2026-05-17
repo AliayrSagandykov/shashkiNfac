@@ -30,6 +30,18 @@ export interface Profile {
   last_active_on: string | null
   language: 'en' | 'ru'
   theme: 'dark' | 'light'
+  is_premium: boolean
+  premium_until: string | null
+  premium_since: string | null
+  stripe_customer_id: string | null
+}
+
+export function isPremiumActive(
+  p: Pick<Profile, 'is_premium' | 'premium_until'> | null | undefined,
+): boolean {
+  if (!p?.is_premium) return false
+  if (p.premium_until === null) return true
+  return new Date(p.premium_until).getTime() > Date.now()
 }
 
 export async function fetchProfile(userId: string): Promise<Profile | null> {

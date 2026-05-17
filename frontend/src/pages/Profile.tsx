@@ -5,7 +5,7 @@ import Avatar from '../components/Avatar'
 import { useAuthStore } from '../store/authStore'
 import { useProfileStore } from '../store/profileStore'
 import { useNavigate } from 'react-router-dom'
-import { fetchProfile, uploadAvatar, type Profile as ProfileT } from '../services/profile'
+import { fetchProfile, isPremiumActive, uploadAvatar, type Profile as ProfileT } from '../services/profile'
 import { fetchRecentGames, type SavedGame } from '../services/games'
 import { t } from '../i18n'
 import LanguageToggle from '../components/LanguageToggle'
@@ -164,7 +164,13 @@ export default function Profile() {
               </div>
             )}
             <div className="flex items-start gap-5">
-              <div className="relative">
+              <div
+                className={`relative ${
+                  isPremiumActive(profile)
+                    ? 'rounded-full p-[3px] bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-600 shadow-[0_0_14px_rgba(250,204,21,0.45)]'
+                    : ''
+                }`}
+              >
                 <Avatar
                   name={username}
                   url={profile.avatar_url}
@@ -232,7 +238,14 @@ export default function Profile() {
                   </>
                 ) : (
                   <>
-                    <h1 className="text-fg text-3xl font-bold">{username}</h1>
+                    <h1 className="text-fg text-3xl font-bold flex items-center gap-2 flex-wrap">
+                      <span>{username}</span>
+                      {isPremiumActive(profile) && (
+                        <span className="text-xs font-semibold tracking-wide uppercase bg-gradient-to-r from-yellow-400 to-amber-500 text-black px-2 py-0.5 rounded-full">
+                          👑 Premium
+                        </span>
+                      )}
+                    </h1>
                     <p className="text-muted text-sm capitalize">{profile.level}</p>
                     {profile.bio && (
                       <p className="text-fg2 text-sm mt-3 whitespace-pre-line">

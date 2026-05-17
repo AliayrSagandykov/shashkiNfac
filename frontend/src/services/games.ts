@@ -62,13 +62,28 @@ export async function fetchGame(id: string): Promise<{ game: SavedGame; analysis
   return (await res.json()) as { game: SavedGame; analysis: GameAnalysis | null }
 }
 
-export async function requestAnalysis(id: string, userId?: string, depth?: number): Promise<GameAnalysis | null> {
+export type AnalysisError =
+  | { kind: 'quota_exceeded'; nextAvailableAt?: string }
+  | { kind: 'failed'; message?: string }
+
+export async function requestAnalysis(
+  id: string,
+  userId?: string,
+  depth?: number,
+): Promise<{ analysis: GameAnalysis } | { error: AnalysisError }> {
   const res = await fetch(`${BASE}/api/games/${id}/analyze`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, depth }),
   })
-  if (!res.ok) return null
+  if (res.status === 402) {
+    const body = await res.json().catch(() => ({}))
+    return { error: { kind: 'quota_exceeded', nextAvailableAt: body?.nextAvailableAt } }
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    return { error: { kind: 'failed', message: body?.error } }
+  }
   const data = await res.json()
-  return data.analysis as GameAnalysis
+  return { analysis: data.analysis as GameAnalysis }
 }

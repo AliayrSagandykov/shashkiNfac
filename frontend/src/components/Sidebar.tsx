@@ -3,12 +3,13 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { t } from '../i18n'
 import { useAuthStore } from '../store/authStore'
 import { useProfileStore } from '../store/profileStore'
+import { isPremiumActive } from '../services/profile'
 import ThemeToggle from './ThemeToggle'
 
 interface Item {
   to: string
   icon: string
-  labelKey: 'play' | 'leaderboard' | 'news' | 'profile' | 'signUp'
+  labelKey: 'play' | 'leaderboard' | 'news' | 'profile' | 'signUp' | 'premium'
 }
 
 export default function Sidebar() {
@@ -19,6 +20,8 @@ export default function Sidebar() {
   const [open, setOpen] = useState(false)
 
   const isGuest = !!user?.id?.startsWith('guest-')
+
+  const premium = isPremiumActive(profile)
 
   const items: Item[] = isGuest
     ? [
@@ -31,6 +34,7 @@ export default function Sidebar() {
         { to: '/leaderboard', icon: '🏆', labelKey: 'leaderboard' },
         { to: '/news', icon: '📰', labelKey: 'news' },
         { to: '/profile', icon: '👤', labelKey: 'profile' },
+        { to: '/premium', icon: '👑', labelKey: 'premium' },
       ]
 
   const username = profile?.username ?? user?.user_metadata?.username ?? user?.email ?? 'Player'
