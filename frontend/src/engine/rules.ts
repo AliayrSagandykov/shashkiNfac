@@ -194,8 +194,15 @@ export function getLegalMoves(board: Board, player: Player): Move[] {
     }
   }
 
-  // Capturing is mandatory in international draughts
-  return allCaptures.length > 0 ? allCaptures : simpleMovesArr
+  // Capturing is mandatory in international draughts, and among all
+  // capture options the player must pick one taking the maximum number
+  // of pieces.
+  if (allCaptures.length > 0) {
+    let max = 0
+    for (const m of allCaptures) if (m.captures.length > max) max = m.captures.length
+    return allCaptures.filter((m) => m.captures.length === max)
+  }
+  return simpleMovesArr
 }
 
 export function applyMove(board: Board, move: Move): Board {

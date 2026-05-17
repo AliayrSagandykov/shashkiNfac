@@ -132,7 +132,12 @@ export function getLegalMoves(board: Board, player: Player): Move[] {
       }
     }
   }
-  return captures.length > 0 ? captures : simples
+  if (captures.length > 0) {
+    let max = 0
+    for (const m of captures) if (m.captures.length > max) max = m.captures.length
+    return captures.filter((m) => m.captures.length === max)
+  }
+  return simples
 }
 
 export function applyMove(board: Board, move: Move): Board {
