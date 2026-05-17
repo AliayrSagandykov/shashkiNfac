@@ -23,7 +23,7 @@ export default function Sidebar() {
   const items: Item[] = isGuest
     ? [
         { to: '/', icon: '▶', labelKey: 'play' },
-        { to: '/signup', icon: '🪪', labelKey: 'signUp' },
+        { to: '/signup', icon: '→', labelKey: 'signUp' },
         { to: '/news', icon: '📰', labelKey: 'news' },
       ]
     : [
@@ -92,13 +92,22 @@ export default function Sidebar() {
             <span className="text-2xl">♟</span>
             <span>Checkers</span>
           </div>
-          <button
-            onClick={() => setOpen(false)}
-            aria-label="Close"
-            className="lg:hidden text-muted hover:text-fg text-2xl leading-none"
-          >
-            ×
-          </button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle
+              onChange={
+                profile
+                  ? (next) => update({ theme: next }).then(() => undefined)
+                  : undefined
+              }
+            />
+            <button
+              onClick={() => setOpen(false)}
+              aria-label="Close"
+              className="lg:hidden text-muted hover:text-fg text-2xl leading-none"
+            >
+              ×
+            </button>
+          </div>
         </div>
 
         <nav className="flex-1 py-3 space-y-0.5 overflow-y-auto">
@@ -132,40 +141,31 @@ export default function Sidebar() {
           )}
         </nav>
 
-        <div className="border-t border-line p-3 space-y-2">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => (isGuest ? handleSignUpClick() : navigate('/profile'))}
-              className="flex-1 flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-hover transition-colors text-left"
-            >
-              <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-fg font-bold text-sm shrink-0">
-                {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  username.charAt(0).toUpperCase()
-                )}
+        <div className="border-t border-line p-3">
+          <button
+            onClick={() => (isGuest ? handleSignUpClick() : navigate('/profile'))}
+            className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-hover transition-colors text-left"
+          >
+            <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-fg font-bold text-sm shrink-0">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                username.charAt(0).toUpperCase()
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-fg text-sm font-medium truncate">
+                {isGuest ? 'Guest' : username}
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-fg text-sm font-medium truncate">
-                  {isGuest ? 'Guest' : username}
-                </div>
-                {profile && !isGuest && (
-                  <div className="text-muted text-xs">⭐ {profile.rating}</div>
-                )}
-                {isGuest && <div className="text-muted text-xs">→ {t('signUp')}</div>}
-              </div>
-            </button>
-            <ThemeToggle
-              onChange={
-                profile
-                  ? (next) => update({ theme: next }).then(() => undefined)
-                  : undefined
-              }
-            />
-          </div>
+              {profile && !isGuest && (
+                <div className="text-muted text-xs">⭐ {profile.rating}</div>
+              )}
+              {isGuest && <div className="text-muted text-xs">→ {t('signUp')}</div>}
+            </div>
+          </button>
           <button
             onClick={isGuest ? handleSignUpClick : handleSignOut}
-            className="w-full text-faint hover:text-fg text-xs px-2 py-1.5 transition-colors text-left"
+            className="w-full mt-2 text-faint hover:text-fg text-xs px-2 py-1.5 transition-colors text-left"
           >
             {isGuest ? t('signUp') : t('signOut')}
           </button>
