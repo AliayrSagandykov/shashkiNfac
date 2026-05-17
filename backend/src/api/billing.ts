@@ -101,10 +101,12 @@ async function applySubscriptionChange(sub: Stripe.Subscription): Promise<void> 
     .eq('id', prof.id)
 }
 
-export function registerBillingRoutes(app: Express, frontendUrl: string): void {
-  // The webhook handler MUST receive the raw request body for signature
-  // verification, so register it BEFORE express.json() and with its own
-  // express.raw middleware.
+/**
+ * The webhook handler MUST receive the raw request body for signature
+ * verification, so it has its own express.raw middleware and must be
+ * mounted BEFORE app.use(express.json()).
+ */
+export function registerStripeWebhook(app: Express, frontendUrl: string): void {
   app.post(
     '/api/billing/webhook',
     express.raw({ type: 'application/json' }),
@@ -144,9 +146,14 @@ export function registerBillingRoutes(app: Express, frontendUrl: string): void {
     },
   )
 
-  // The remaining routes use the global express.json() middleware that
-  // index.ts mounts after registering this router's webhook.
+}
 
+/**
+ * Checkout + portal routes. These read JSON bodies, so they must be
+ * mounted AFTER app.use(express.json()) — otherwise req.body is undefined
+ * and every request 400s with userId_required.
+ */
+export function registerBillingApi(app: Express, frontendUrl: string): void {
   app.post('/api/billing/checkout', async (req: Request, res: Response) => {
     const stripe = getStripe()
     const cfg = getStripeConfig(frontendUrl)

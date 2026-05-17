@@ -8,7 +8,7 @@ import { setupMatchmaking } from './matchmaking/matchmaker'
 import { gameRooms } from './game/gameRoom'
 import { endGame } from './handlers/timeoutWatcher'
 import { registerGameRoutes } from './api/games'
-import { registerBillingRoutes } from './api/billing'
+import { registerBillingApi, registerStripeWebhook } from './api/billing'
 
 const app = express()
 const httpServer = createServer(app)
@@ -33,12 +33,13 @@ const io = new Server(httpServer, {
 
 app.use(cors({ origin: corsOrigin }))
 
-// IMPORTANT: register billing routes BEFORE express.json(). The Stripe
-// webhook handler needs the raw body for signature verification and
-// installs its own express.raw middleware on that one route. Everything
-// else gets JSON parsing immediately after.
 const primaryFrontendUrl = allowedOrigins[0] ?? 'http://localhost:5173'
-registerBillingRoutes(app, primaryFrontendUrl)
+
+// The Stripe webhook needs the raw request body for signature
+// verification, so it must be registered BEFORE express.json(). The
+// other billing routes (checkout, portal) read JSON bodies and are
+// registered AFTER express.json() below.
+registerStripeWebhook(app, primaryFrontendUrl)
 
 app.use(express.json())
 
@@ -51,6 +52,7 @@ app.get('/api/leaderboard', async (_req, res) => {
 })
 
 registerGameRoutes(app)
+registerBillingApi(app, primaryFrontendUrl)
 
 const matchmaker = setupMatchmaking(io)
 
