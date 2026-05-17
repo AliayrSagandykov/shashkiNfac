@@ -12,15 +12,25 @@ import { registerGameRoutes } from './api/games'
 const app = express()
 const httpServer = createServer(app)
 
+// Browsers send the Origin header without a trailing slash, but env vars
+// are easy to mistype as 'https://foo.example/'. Normalise so a stray
+// slash (or comma-separated list) doesn't break CORS.
+const allowedOrigins = (process.env.FRONTEND_URL ?? 'http://localhost:5173')
+  .split(',')
+  .map((o) => o.trim().replace(/\/+$/, ''))
+  .filter(Boolean)
+
+const corsOrigin = allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins
+
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:5173',
+    origin: corsOrigin,
     methods: ['GET', 'POST'],
   },
   transports: ['websocket'],
 })
 
-app.use(cors({ origin: process.env.FRONTEND_URL ?? 'http://localhost:5173' }))
+app.use(cors({ origin: corsOrigin }))
 app.use(express.json())
 
 app.get('/health', (_req, res) => {
