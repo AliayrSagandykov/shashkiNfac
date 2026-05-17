@@ -6,6 +6,24 @@ import { useProfileStore } from '../store/profileStore'
 import { isPremiumActive } from '../services/profile'
 import { startCheckout, openCustomerPortal, type Plan } from '../services/billing'
 
+function explainBillingError(code: string): string {
+  switch (code) {
+    case 'stripe_not_configured':
+      return 'Stripe is not configured on the server yet. The backend is missing one of STRIPE_SECRET_KEY / STRIPE_PRICE_MONTHLY / STRIPE_PRICE_LIFETIME / STRIPE_WEBHOOK_SECRET — set them in Render and redeploy.'
+    case 'profile_not_found':
+      return 'Your profile row is missing. Try signing out and back in.'
+    case 'userId_required':
+    case 'plan_required':
+      return `Bad request (${code}). Please reload the page and try again.`
+    case 'http_404':
+      return 'Billing endpoint not found. The backend may not have redeployed with the latest code yet.'
+    case 'http_503':
+      return 'Stripe is not configured on the server. Check STRIPE_* env vars on Render.'
+    default:
+      return `Couldn't reach Stripe (${code}). Try again in a moment.`
+  }
+}
+
 export default function Premium() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
@@ -45,26 +63,26 @@ export default function Premium() {
     }
     setBusy(plan)
     setError(null)
-    const url = await startCheckout(user.id, plan)
+    const r = await startCheckout(user.id, plan)
     setBusy(null)
-    if (!url) {
-      setError("Couldn't reach Stripe. Try again in a moment.")
+    if ('error' in r) {
+      setError(explainBillingError(r.error))
       return
     }
-    window.location.href = url
+    window.location.href = r.url
   }
 
   const handlePortal = async () => {
     if (!user?.id) return
     setBusy('portal')
     setError(null)
-    const url = await openCustomerPortal(user.id)
+    const r = await openCustomerPortal(user.id)
     setBusy(null)
-    if (!url) {
-      setError("Couldn't open the billing portal.")
+    if ('error' in r) {
+      setError(explainBillingError(r.error))
       return
     }
-    window.location.href = url
+    window.location.href = r.url
   }
 
   return (
