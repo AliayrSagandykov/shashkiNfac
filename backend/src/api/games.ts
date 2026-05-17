@@ -3,8 +3,12 @@ import { getSupabase } from '../services/supabase'
 import { analyzeGame } from '../analysis/analyzer'
 import type { Move } from '../engine/rules'
 
-const ANALYSIS_DEPTH_DEFAULT = 6
-const ANALYSIS_TIME_BUDGET_PER_PLY = 600
+// Depth is a target ceiling, not a guarantee: searchPosition uses iterative
+// deepening, so it'll reach as deep as the per-ply time budget allows and
+// return the deepest completed iteration. 8 with proper move ordering is a
+// big strength jump over the old fixed depth-6 with no ordering.
+const ANALYSIS_DEPTH_DEFAULT = 8
+const ANALYSIS_TIME_BUDGET_PER_PLY = 700
 // Render free tier kills any HTTP request that takes more than ~100s, with
 // no response (so the browser sees a missing CORS header). Stop analysing
 // before that so we always return *something*.
