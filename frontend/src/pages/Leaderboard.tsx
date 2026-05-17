@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import Avatar from '../components/Avatar'
-import { fetchTopProfiles, type Profile } from '../services/profile'
+import { fetchTopProfiles, isPremiumActive, type Profile } from '../services/profile'
 import { useAuthStore } from '../store/authStore'
 import { t } from '../i18n'
 
@@ -45,6 +45,7 @@ export default function Leaderboard() {
               {profiles.map((p, i) => {
                 const rank = i + 1
                 const isMe = user?.id === p.id
+                const premium = isPremiumActive(p)
                 const winRate =
                   p.games_played > 0
                     ? Math.round((p.wins / p.games_played) * 100)
@@ -54,19 +55,37 @@ export default function Leaderboard() {
                     key={p.id}
                     onClick={() => navigate(`/u/${p.id}`)}
                     className={`w-full grid grid-cols-[2.5rem_1fr_3.5rem_3.5rem] sm:grid-cols-[3rem_1fr_5rem_5rem] items-center px-4 py-3 border-b border-line/50 last:border-0 text-left hover:bg-hover transition-colors ${
-                      isMe ? 'bg-blue-900/30' : ''
-                    }`}
+                      premium
+                        ? 'bg-gradient-to-r from-yellow-500/10 via-transparent to-transparent'
+                        : ''
+                    } ${isMe ? 'bg-blue-900/30' : ''}`}
                   >
                     <div className="text-fg font-bold text-base">
                       {medal(rank)}
                     </div>
                     <div className="flex items-center gap-3 min-w-0">
-                      <Avatar name={p.username ?? '?'} url={p.avatar_url} size={36} />
+                      <div
+                        className={
+                          premium
+                            ? 'rounded-full p-[2px] bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-600 shadow-[0_0_8px_rgba(250,204,21,0.45)]'
+                            : ''
+                        }
+                      >
+                        <Avatar name={p.username ?? '?'} url={p.avatar_url} size={36} />
+                      </div>
                       <div className="min-w-0">
-                        <div className="text-fg font-medium truncate">
-                          {p.username ?? 'Unnamed'}
+                        <div className="text-fg font-medium truncate flex items-center gap-1.5">
+                          <span className="truncate">{p.username ?? 'Unnamed'}</span>
+                          {premium && (
+                            <span
+                              title="Premium"
+                              className="text-yellow-300 text-sm leading-none"
+                            >
+                              👑
+                            </span>
+                          )}
                           {isMe && (
-                            <span className="ml-2 text-xs text-blue-300">you</span>
+                            <span className="ml-1 text-xs text-blue-300">you</span>
                           )}
                         </div>
                         <div className="text-faint text-xs capitalize">{p.level}</div>

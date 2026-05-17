@@ -141,14 +141,24 @@ export default function Review() {
 
   const lastMove = ply >= 0 && game ? game.moves[ply] : null
 
+  const [quotaBlocked, setQuotaBlocked] = useState<{ nextAt?: string } | null>(null)
+
   const handleRun = async () => {
     if (!resolvedId) return
     setRunning(true)
     setError(null)
+    setQuotaBlocked(null)
     const result = await requestAnalysis(resolvedId, user?.id)
     setRunning(false)
-    if (!result) setError('Analysis failed')
-    else setAnalysis(result)
+    if ('error' in result) {
+      if (result.error.kind === 'quota_exceeded') {
+        setQuotaBlocked({ nextAt: result.error.nextAvailableAt })
+      } else {
+        setError(result.error.message ?? 'Analysis failed')
+      }
+      return
+    }
+    setAnalysis(result.analysis)
   }
 
   if (loading) {
@@ -379,20 +389,44 @@ export default function Review() {
                   </div>
                 </>
               ) : (
-                <div className="bg-card rounded-xl border border-line p-6 text-center">
-                  <div className="text-fg font-semibold mb-1">Game review</div>
-                  <p className="text-muted text-sm mb-4">
-                    Run the engine on every move to find blunders, inaccuracies and the best line.
-                  </p>
-                  {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
-                  <button
-                    onClick={handleRun}
-                    disabled={running}
-                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-fg py-3 rounded-xl font-semibold"
-                  >
-                    {running ? 'Analyzing… (this can take a minute)' : 'Analyze game'}
-                  </button>
-                </div>
+                quotaBlocked ? (
+                  <div className="bg-gradient-to-br from-yellow-500/15 to-amber-700/5 border border-yellow-500/40 rounded-xl p-6 text-center">
+                    <div className="text-3xl mb-2">👑</div>
+                    <div className="text-fg font-semibold mb-1">
+                      Free daily analysis used
+                    </div>
+                    <p className="text-muted text-sm mb-1">
+                      Free accounts get one engine analysis every 24 hours.
+                    </p>
+                    {quotaBlocked.nextAt && (
+                      <p className="text-faint text-xs mb-4">
+                        Next free analysis available at{' '}
+                        {new Date(quotaBlocked.nextAt).toLocaleTimeString()}.
+                      </p>
+                    )}
+                    <button
+                      onClick={() => navigate('/premium')}
+                      className="w-full bg-yellow-500 hover:bg-yellow-400 text-black py-3 rounded-xl font-semibold"
+                    >
+                      Upgrade for unlimited analysis
+                    </button>
+                  </div>
+                ) : (
+                  <div className="bg-card rounded-xl border border-line p-6 text-center">
+                    <div className="text-fg font-semibold mb-1">Game review</div>
+                    <p className="text-muted text-sm mb-4">
+                      Run the engine on every move to find blunders, inaccuracies and the best line.
+                    </p>
+                    {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
+                    <button
+                      onClick={handleRun}
+                      disabled={running}
+                      className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-fg py-3 rounded-xl font-semibold"
+                    >
+                      {running ? 'Analyzing… (this can take a minute)' : 'Analyze game'}
+                    </button>
+                  </div>
+                )
               )}
             </aside>
           </div>

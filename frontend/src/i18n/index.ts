@@ -1,6 +1,7 @@
 const dict = {
   en: {
     play: 'Play',
+    premium: 'Premium',
     home: 'Home',
     puzzles: 'Puzzles',
     learn: 'Learn',
@@ -102,6 +103,7 @@ const dict = {
   },
   ru: {
     play: 'Играть',
+    premium: 'Премиум',
     home: 'Главная',
     puzzles: 'Задачи',
     learn: 'Учеба',

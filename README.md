@@ -91,7 +91,7 @@ Backend: hosted on Render
 - A Supabase project with Google OAuth enabled
 
 ### Database
-Apply the SQL in `supabase/migrations/` in order (`001_…` → `006_…`)
+Apply the SQL in `supabase/migrations/` in order (`001_…` → `007_…`)
 in the Supabase SQL editor. They set up:
 
 | File | Adds |
@@ -102,6 +102,7 @@ in the Supabase SQL editor. They set up:
 | `004_language_pref.sql` | Per-user language |
 | `005_theme_pref.sql` | Per-user theme |
 | `006_games_and_analysis.sql` | `match_history` + `match_analyses` |
+| `007_premium.sql` | Premium flags + Stripe customer id + analysis quota stamp |
 
 ### Frontend
 
@@ -128,17 +129,93 @@ npm run dev          # http://localhost:3001
 > strips it defensively, but cleaner to omit). Multiple origins
 > can be passed comma-separated.
 
+## Premium / Stripe setup
+
+Premium adds: unlimited engine analyses (free tier is 1 per rolling
+24 h), a golden frame on the leaderboard, and a Premium badge on the
+profile. Two plans are offered: monthly subscription and one-time
+lifetime.
+
+If the four `STRIPE_*` env vars below aren't set, the billing routes
+return `503` and the rest of the app continues to work — free-tier
+quota still applies, just nobody can upgrade.
+
+### 1. Create the Stripe account
+
+1. Sign up at <https://dashboard.stripe.com>.
+2. Stay in **Test mode** (top-right toggle) while developing — test-mode
+   card `4242 4242 4242 4242` with any future date + any CVC works.
+
+### 2. Create the products / prices
+
+In the Stripe dashboard → **Products** → **+ Add product**:
+
+**Product 1: Checkers Premium (Monthly)**
+- Name: `Checkers Premium`
+- Pricing: **Recurring · $4.99 / month** (pick any currency/price you like)
+- Save → copy the **Price ID** (`price_…`) into `STRIPE_PRICE_MONTHLY`.
+
+**Product 2: Checkers Premium Lifetime**
+- Name: `Checkers Premium Lifetime`
+- Pricing: **One-time · $39**
+- Save → copy the **Price ID** into `STRIPE_PRICE_LIFETIME`.
+
+### 3. Grab the secret key
+
+Developers → **API keys** → reveal **Secret key** (`sk_test_…`) → copy
+into `STRIPE_SECRET_KEY`.
+
+### 4. Set up the webhook
+
+The backend needs Stripe to call `POST /api/billing/webhook` when a
+checkout completes / subscription changes.
+
+**Production**: Developers → **Webhooks** → **+ Add endpoint** →
+endpoint URL `https://<your-backend>/api/billing/webhook`. Pick events:
+`checkout.session.completed`, `customer.subscription.updated`,
+`customer.subscription.deleted`. Save → copy the **Signing secret**
+(`whsec_…`) into `STRIPE_WEBHOOK_SECRET`.
+
+**Local dev**: install the Stripe CLI and run
+
+```bash
+stripe login
+stripe listen --forward-to localhost:3001/api/billing/webhook
+```
+
+The CLI prints a `whsec_…` for you — use that as `STRIPE_WEBHOOK_SECRET`
+locally. Trigger a test event with `stripe trigger checkout.session.completed`.
+
+### 5. Configure the Customer Portal
+
+Settings → **Billing** → **Customer portal** → enable it and pick which
+actions users can take (cancel, update payment method, etc.). No env var
+needed; the backend's `/api/billing/portal` endpoint uses it directly.
+
+### 6. Final env
+
+```env
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PRICE_MONTHLY=price_...
+STRIPE_PRICE_LIFETIME=price_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+Restart the backend and visit `/premium` in the frontend — both plans
+should be live.
+
 ## Project structure
 
 ```
 frontend/src/
-  pages/         Login · Home · Game · Review · Profile · Leaderboard · News
+  pages/         Login · Home · Game · Review · Profile · Leaderboard ·
+                 News · Premium
   components/    Board · Piece · Clock · Timer · Avatar · ChatPanel · MoveList ·
                  EvalGraph · GameOverModal · OnboardingModal ·
                  LanguageToggle · ThemeToggle · Sidebar
   engine/        rules.ts (international draughts) · ai.ts (minimax + ID)
   store/         authStore · gameStore · profileStore   (Zustand)
-  services/      supabase · socket · games · profile
+  services/      supabase · socket · games · profile · billing
   i18n/          en + ru
 
 backend/src/
@@ -149,7 +226,9 @@ backend/src/
   matchmaking/   matchmaker.ts   — queue, pairing, Elo-tolerance widen
   analysis/      analyzer.ts     — per-move eval, classification, accuracy
   api/           games.ts        — REST: recent / detail / analyze
+                 billing.ts      — Stripe checkout · webhook · portal
   services/      supabase.ts     — service-role client
+                 stripe.ts       — lazy Stripe client + config
   types/         game.ts         — TimeControl, GameRoom, QueueEntry
 
 supabase/migrations/             — versioned SQL migrations
@@ -162,7 +241,10 @@ supabase/migrations/             — versioned SQL migrations
 | `GET`  | `/health` | Liveness probe |
 | `GET`  | `/api/games/recent?userId=…&limit=…` | Recent matches for a user |
 | `GET`  | `/api/games/:id` | Single game + saved analysis (if any) |
-| `POST` | `/api/games/:id/analyze` | Run / fetch cached analysis. Body: `{ depth?, userId? }` |
+| `POST` | `/api/games/:id/analyze` | Run / fetch cached analysis. Body: `{ depth?, userId? }`. Returns `402 { error: "quota_exceeded", nextAvailableAt }` for free users over the daily limit. |
+| `POST` | `/api/billing/checkout` | Body: `{ userId, plan: "monthly" \| "lifetime" }`. Returns `{ url }` to redirect to Stripe Checkout. |
+| `POST` | `/api/billing/portal` | Body: `{ userId }`. Returns `{ url }` to Stripe Customer Portal (cancel / update card). |
+| `POST` | `/api/billing/webhook` | Stripe → backend. Raw-body, signature-verified. Handles `checkout.session.completed`, `customer.subscription.{updated,deleted}`. |
 
 ## Socket events
 

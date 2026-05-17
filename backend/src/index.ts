@@ -8,6 +8,7 @@ import { setupMatchmaking } from './matchmaking/matchmaker'
 import { gameRooms } from './game/gameRoom'
 import { endGame } from './handlers/timeoutWatcher'
 import { registerGameRoutes } from './api/games'
+import { registerBillingRoutes } from './api/billing'
 
 const app = express()
 const httpServer = createServer(app)
@@ -31,6 +32,14 @@ const io = new Server(httpServer, {
 })
 
 app.use(cors({ origin: corsOrigin }))
+
+// IMPORTANT: register billing routes BEFORE express.json(). The Stripe
+// webhook handler needs the raw body for signature verification and
+// installs its own express.raw middleware on that one route. Everything
+// else gets JSON parsing immediately after.
+const primaryFrontendUrl = allowedOrigins[0] ?? 'http://localhost:5173'
+registerBillingRoutes(app, primaryFrontendUrl)
+
 app.use(express.json())
 
 app.get('/health', (_req, res) => {
