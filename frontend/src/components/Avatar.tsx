@@ -12,7 +12,7 @@ export default function Avatar({ name, url, size = 40, className }: Props) {
     <div
       style={style}
       className={[
-        'rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold shrink-0',
+        'rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-fg font-bold shrink-0',
         className ?? '',
       ].join(' ')}
     >

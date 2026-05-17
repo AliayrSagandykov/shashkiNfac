@@ -395,7 +395,7 @@ export default function Game() {
     timeMs: number
     active: boolean
   }) => (
-    <div className="flex items-center justify-between bg-[#1f2937] rounded-xl border border-[#374151] px-3 py-2">
+    <div className="flex items-center justify-between bg-card rounded-xl border border-line px-3 py-2">
       <div className="flex items-center gap-2 min-w-0">
         <Avatar
           name={side === 'top' ? opponentName ?? 'O' : myName ?? 'You'}
@@ -403,9 +403,9 @@ export default function Game() {
           size={36}
         />
         <div className="min-w-0">
-          <div className="text-white text-sm font-medium truncate">{name}</div>
+          <div className="text-fg text-sm font-medium truncate">{name}</div>
           {rating != null && (
-            <div className="text-gray-400 text-xs">⭐ {rating}</div>
+            <div className="text-muted text-xs">⭐ {rating}</div>
           )}
         </div>
       </div>
@@ -414,18 +414,18 @@ export default function Game() {
   )
 
   return (
-    <div className="min-h-screen bg-[#0f1419] flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-app flex flex-col lg:flex-row">
       <main className="flex-1 flex items-start lg:items-center justify-center p-2 sm:p-3 lg:p-6">
         <div className="w-full max-w-2xl">
           <div className="flex items-center justify-between mb-3">
             <button
               onClick={leaveGame}
-              className="text-gray-400 hover:text-white text-sm transition-colors"
+              className="text-muted hover:text-fg text-sm transition-colors"
             >
               ← {t('home_')}
             </button>
             {mode === 'random' && (
-              <div className="text-gray-500 text-xs">{timeControl}</div>
+              <div className="text-faint text-xs">{timeControl}</div>
             )}
           </div>
 
@@ -438,10 +438,10 @@ export default function Game() {
               active={status === 'playing' && turn === opponentColor}
             />
 
-            <div className="bg-[#16213e] rounded-2xl p-3 border border-[#0f3460]">
+            <div className="bg-card2 rounded-2xl p-3 border border-line2">
               {status === 'playing' && (
                 <div className="text-center mb-2">
-                  <span className="text-base font-bold text-white">{turnLabel}</span>
+                  <span className="text-base font-bold text-fg">{turnLabel}</span>
                 </div>
               )}
 
@@ -464,17 +464,17 @@ export default function Game() {
             />
 
             {status === 'playing' && mode === 'random' && (
-              <div className="bg-[#1f2937] rounded-xl border border-[#374151] p-2 flex gap-2">
+              <div className="bg-card rounded-xl border border-line p-2 flex gap-2">
                 <button
                   onClick={handleOfferDraw}
                   disabled={drawOfferFrom === myColor}
-                  className="flex-1 bg-[#374151] hover:bg-[#4b5563] disabled:opacity-50 text-white text-sm py-2 rounded-lg transition-colors"
+                  className="flex-1 bg-elev hover:bg-hover disabled:opacity-50 text-fg text-sm py-2 rounded-lg transition-colors"
                 >
                   ½ {t('offerDraw')}
                 </button>
                 <button
                   onClick={handleResign}
-                  className="flex-1 bg-[#374151] hover:bg-red-700 text-white text-sm py-2 rounded-lg transition-colors"
+                  className="flex-1 bg-elev hover:bg-red-700 text-fg text-sm py-2 rounded-lg transition-colors"
                 >
                   🏳 {t('resign')}
                 </button>
@@ -487,13 +487,13 @@ export default function Game() {
                 <div className="flex gap-2">
                   <button
                     onClick={handleAcceptDraw}
-                    className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 rounded-lg"
+                    className="bg-green-600 hover:bg-green-700 text-fg text-xs px-3 py-1.5 rounded-lg"
                   >
                     {t('accept')}
                   </button>
                   <button
                     onClick={handleDeclineDraw}
-                    className="bg-[#374151] hover:bg-[#4b5563] text-white text-xs px-3 py-1.5 rounded-lg"
+                    className="bg-elev hover:bg-hover text-fg text-xs px-3 py-1.5 rounded-lg"
                   >
                     {t('decline')}
                   </button>

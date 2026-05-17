@@ -31,8 +31,8 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0f1419]">
-        <div className="text-white text-xl">Loading...</div>
+      <div className="flex items-center justify-center min-h-screen bg-app">
+        <div className="text-fg text-xl">Loading...</div>
       </div>
     )
   }

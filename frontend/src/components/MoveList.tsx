@@ -25,22 +25,22 @@ export default function MoveList({ moves }: { moves: Move[] }) {
   }, [moves.length])
 
   return (
-    <div className="bg-[#16213e] rounded-xl border border-[#0f3460] overflow-hidden flex flex-col h-full">
-      <div className="px-4 py-2 border-b border-[#0f3460] text-gray-300 text-sm font-semibold">
+    <div className="bg-card2 rounded-xl border border-line2 overflow-hidden flex flex-col h-full">
+      <div className="px-4 py-2 border-b border-line2 text-fg2 text-sm font-semibold">
         {t('moves')}
       </div>
       <div ref={scrollRef} className="overflow-y-auto flex-1 text-sm font-mono">
         {rows.length === 0 ? (
-          <div className="text-gray-500 text-xs text-center py-4">—</div>
+          <div className="text-faint text-xs text-center py-4">—</div>
         ) : (
           rows.map((r) => (
             <div
               key={r.num}
-              className="grid grid-cols-[2rem_1fr_1fr] gap-2 px-3 py-1 border-b border-[#0f3460]/50 last:border-0 hover:bg-[#1a2a4e]"
+              className="grid grid-cols-[2rem_1fr_1fr] gap-2 px-3 py-1 border-b border-line2/50 last:border-0 hover:bg-hover"
             >
-              <span className="text-gray-500">{r.num}.</span>
-              <span className="text-gray-100">{r.black ? notate(r.black) : ''}</span>
-              <span className="text-gray-300">{r.white ? notate(r.white) : ''}</span>
+              <span className="text-faint">{r.num}.</span>
+              <span className="text-fg">{r.black ? notate(r.black) : ''}</span>
+              <span className="text-fg2">{r.white ? notate(r.white) : ''}</span>
             </div>
           ))
         )}

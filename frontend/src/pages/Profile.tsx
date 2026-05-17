@@ -28,12 +28,12 @@ function StatTile({
       ? 'text-yellow-300'
       : accent === 'blue'
       ? 'text-blue-400'
-      : 'text-white'
+      : 'text-fg'
   return (
-    <div className="bg-[#1f2937] rounded-2xl border border-[#374151] p-5">
-      <div className="text-gray-400 text-xs uppercase tracking-wide">{label}</div>
+    <div className="bg-card rounded-2xl border border-line p-5">
+      <div className="text-muted text-xs uppercase tracking-wide">{label}</div>
       <div className={`text-3xl font-bold mt-1 ${color}`}>{value}</div>
-      {sub && <div className="text-gray-500 text-xs mt-1">{sub}</div>}
+      {sub && <div className="text-faint text-xs mt-1">{sub}</div>}
     </div>
   )
 }
@@ -76,18 +76,18 @@ export default function Profile() {
 
   if (!viewingOwn && otherLoading) {
     return (
-      <div className="min-h-screen bg-[#0f1419] flex">
+      <div className="min-h-screen bg-app flex">
         <Sidebar />
-        <main className="flex-1 flex items-center justify-center text-gray-400">…</main>
+        <main className="flex-1 flex items-center justify-center text-muted">…</main>
       </div>
     )
   }
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-[#0f1419] flex">
+      <div className="min-h-screen bg-app flex">
         <Sidebar />
-        <main className="flex-1 flex items-center justify-center text-gray-400">
+        <main className="flex-1 flex items-center justify-center text-muted">
           {viewingOwn && user?.id?.startsWith('guest-')
             ? t('signInToUnlock')
             : viewingOwn
@@ -138,11 +138,11 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f1419] flex">
+    <div className="min-h-screen bg-app flex">
       <Sidebar />
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-4 lg:px-6 pt-16 lg:pt-8 pb-8">
-          <div className="relative bg-[#1f2937] border border-[#374151] rounded-2xl p-6 mb-4">
+          <div className="relative bg-card border border-line rounded-2xl p-6 mb-4">
             {viewingOwn && (
               <div className="absolute top-3 right-3">
                 <LanguageToggle
@@ -163,7 +163,7 @@ export default function Profile() {
                     <button
                       onClick={() => fileRef.current?.click()}
                       disabled={uploading}
-                      className="absolute -bottom-1 -right-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs rounded-full w-7 h-7 flex items-center justify-center border-2 border-[#1f2937]"
+                      className="absolute -bottom-1 -right-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-fg text-xs rounded-full w-7 h-7 flex items-center justify-center border-2 border-line"
                       title={t('uploadAvatar')}
                     >
                       {uploading ? '…' : '📷'}
@@ -186,7 +186,7 @@ export default function Profile() {
                       value={draftName}
                       onChange={(e) => setDraftName(e.target.value)}
                       maxLength={20}
-                      className="bg-[#0f1e3d] text-white text-2xl font-bold py-1 px-2 rounded-lg border border-[#374151] focus:outline-none focus:border-blue-500 w-full max-w-xs"
+                      className="bg-field text-fg text-2xl font-bold py-1 px-2 rounded-lg border border-line focus:outline-none focus:border-blue-500 w-full max-w-xs"
                     />
                     <textarea
                       value={draftBio}
@@ -194,19 +194,19 @@ export default function Profile() {
                       maxLength={200}
                       rows={3}
                       placeholder={t('bioPlaceholder')}
-                      className="bg-[#0f1e3d] text-gray-200 text-sm py-2 px-3 mt-2 rounded-lg border border-[#374151] focus:outline-none focus:border-blue-500 w-full resize-none"
+                      className="bg-field text-fg2 text-sm py-2 px-3 mt-2 rounded-lg border border-line focus:outline-none focus:border-blue-500 w-full resize-none"
                     />
                     <div className="flex gap-2 mt-3">
                       <button
                         onClick={handleSave}
                         disabled={saveStatus === 'saving'}
-                        className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm px-4 py-1.5 rounded-lg"
+                        className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-fg text-sm px-4 py-1.5 rounded-lg"
                       >
                         {saveStatus === 'saving' ? t('saving') : t('save')}
                       </button>
                       <button
                         onClick={() => setEditing(false)}
-                        className="bg-[#374151] hover:bg-[#4b5563] text-white text-sm px-4 py-1.5 rounded-lg"
+                        className="bg-elev hover:bg-hover text-fg text-sm px-4 py-1.5 rounded-lg"
                       >
                         {t('cancel')}
                       </button>
@@ -219,17 +219,17 @@ export default function Profile() {
                   </>
                 ) : (
                   <>
-                    <h1 className="text-white text-3xl font-bold">{username}</h1>
-                    <p className="text-gray-400 text-sm capitalize">{profile.level}</p>
+                    <h1 className="text-fg text-3xl font-bold">{username}</h1>
+                    <p className="text-muted text-sm capitalize">{profile.level}</p>
                     {profile.bio && (
-                      <p className="text-gray-300 text-sm mt-3 whitespace-pre-line">
+                      <p className="text-fg2 text-sm mt-3 whitespace-pre-line">
                         {profile.bio}
                       </p>
                     )}
                     {viewingOwn && (
                       <button
                         onClick={() => setEditing(true)}
-                        className="mt-3 bg-[#374151] hover:bg-[#4b5563] text-white text-xs px-3 py-1.5 rounded-lg"
+                        className="mt-3 bg-elev hover:bg-hover text-fg text-xs px-3 py-1.5 rounded-lg"
                       >
                         ✎ {t('editProfile')}
                       </button>

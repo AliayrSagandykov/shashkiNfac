@@ -33,7 +33,7 @@ function PlayerBadge({
   return (
     <div className="flex flex-col items-center gap-1">
       <AvatarCmp name={name} url={url} size={56} />
-      <div className="text-white text-xs font-medium max-w-[6rem] truncate">{name}</div>
+      <div className="text-fg text-xs font-medium max-w-[6rem] truncate">{name}</div>
     </div>
   )
 }
@@ -82,11 +82,11 @@ export default function GameOverModal(props: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-sm bg-[#1f2937] rounded-2xl border border-[#374151] shadow-2xl overflow-hidden">
+      <div className="w-full max-w-sm bg-card rounded-2xl border border-line shadow-2xl overflow-hidden">
         <div className={`bg-gradient-to-br ${accentBg} px-6 py-5 text-center`}>
-          <div className="text-white text-3xl font-extrabold tracking-tight">{headline}</div>
+          <div className="text-fg text-3xl font-extrabold tracking-tight">{headline}</div>
           {reasonLabel && (
-            <div className="text-white/80 text-sm mt-1">{reasonLabel}</div>
+            <div className="text-fg/80 text-sm mt-1">{reasonLabel}</div>
           )}
         </div>
 
@@ -96,7 +96,7 @@ export default function GameOverModal(props: Props) {
               name={myColor === 'black' ? props.myName : props.opponentName}
               url={myColor === 'black' ? props.myAvatarUrl : props.opponentAvatarUrl}
             />
-            <div className="text-gray-400 font-bold text-lg">vs</div>
+            <div className="text-muted font-bold text-lg">vs</div>
             <PlayerBadge
               name={myColor === 'white' ? props.myName : props.opponentName}
               url={myColor === 'white' ? props.myAvatarUrl : props.opponentAvatarUrl}
@@ -105,8 +105,8 @@ export default function GameOverModal(props: Props) {
 
           {isOnline && ratingDelta != null && (
             <div className="text-center mb-5">
-              <div className="text-gray-400 text-xs">{t('rating')}</div>
-              <div className="text-white text-2xl font-bold">
+              <div className="text-muted text-xs">{t('rating')}</div>
+              <div className="text-fg text-2xl font-bold">
                 {props.myRating}
                 <span
                   className={`ml-2 text-lg ${
@@ -128,13 +128,13 @@ export default function GameOverModal(props: Props) {
               <div className="flex gap-2">
                 <button
                   onClick={props.onRematch}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg font-semibold text-sm"
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-fg py-2 rounded-lg font-semibold text-sm"
                 >
                   ✓ {t('accept')}
                 </button>
                 <button
                   onClick={props.onDeclineRematch}
-                  className="flex-1 bg-[#374151] hover:bg-[#4b5563] text-white py-2 rounded-lg text-sm"
+                  className="flex-1 bg-elev hover:bg-hover text-fg py-2 rounded-lg text-sm"
                 >
                   {t('decline')}
                 </button>
@@ -146,7 +146,7 @@ export default function GameOverModal(props: Props) {
                 <button
                   onClick={props.onRematch}
                   disabled={props.rematchPendingFromMe}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-3 rounded-lg font-semibold transition-colors"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-fg py-3 rounded-lg font-semibold transition-colors"
                 >
                   🔄 {props.rematchPendingFromMe ? t('rematchOffered') : t('rematch')}
                 </button>
@@ -154,14 +154,14 @@ export default function GameOverModal(props: Props) {
               {!isOnline && (
                 <button
                   onClick={props.onRematch}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition-colors"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-fg py-3 rounded-lg font-semibold transition-colors"
                 >
                   🔄 {t('rematch')}
                 </button>
               )}
               <button
                 onClick={props.onHome}
-                className="flex-1 bg-[#374151] hover:bg-[#4b5563] text-white py-3 rounded-lg font-semibold transition-colors"
+                className="flex-1 bg-elev hover:bg-hover text-fg py-3 rounded-lg font-semibold transition-colors"
               >
                 {t('home_')}
               </button>

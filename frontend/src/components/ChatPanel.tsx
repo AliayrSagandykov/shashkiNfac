@@ -34,13 +34,13 @@ export default function ChatPanel({ messages, myColor, disabled, onSend }: Props
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#16213e] rounded-xl border border-[#0f3460] overflow-hidden">
-      <div className="px-4 py-2 border-b border-[#0f3460] text-gray-300 text-sm font-semibold">
+    <div className="flex flex-col h-full bg-card2 rounded-xl border border-line2 overflow-hidden">
+      <div className="px-4 py-2 border-b border-line2 text-fg2 text-sm font-semibold">
         {t('chat')}
       </div>
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-1 text-sm">
         {messages.length === 0 ? (
-          <div className="text-gray-500 text-xs text-center mt-4">—</div>
+          <div className="text-faint text-xs text-center mt-4">—</div>
         ) : (
           messages.map((m, i) => {
             const mine = m.from === myColor
@@ -50,14 +50,14 @@ export default function ChatPanel({ messages, myColor, disabled, onSend }: Props
                 key={i}
                 className={`leading-tight ${
                   sys
-                    ? 'text-gray-500 italic text-xs text-center'
+                    ? 'text-faint italic text-xs text-center'
                     : mine
                     ? 'text-blue-300'
-                    : 'text-gray-200'
+                    : 'text-fg2'
                 }`}
               >
                 {!sys && (
-                  <span className="text-gray-500 text-xs mr-1">
+                  <span className="text-faint text-xs mr-1">
                     {m.from === 'black' ? '●' : '○'}
                   </span>
                 )}
@@ -67,19 +67,19 @@ export default function ChatPanel({ messages, myColor, disabled, onSend }: Props
           })
         )}
       </div>
-      <form onSubmit={submit} className="border-t border-[#0f3460] p-2 flex gap-2">
+      <form onSubmit={submit} className="border-t border-line2 p-2 flex gap-2">
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
           disabled={disabled}
           placeholder={t('typeMessage')}
           maxLength={200}
-          className="flex-1 bg-[#0f3460] text-white placeholder-gray-500 text-sm py-2 px-3 rounded-lg border border-[#1a4a7a] focus:outline-none focus:border-blue-500 disabled:opacity-50"
+          className="flex-1 bg-card2 text-fg placeholder-faint text-sm py-2 px-3 rounded-lg border border-line2 focus:outline-none focus:border-blue-500 disabled:opacity-50"
         />
         <button
           type="submit"
           disabled={disabled || !text.trim()}
-          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-fg px-3 py-2 rounded-lg text-sm font-medium transition-colors"
         >
           →
         </button>

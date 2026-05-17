@@ -23,9 +23,9 @@ export default function Clock({ ms, active, unlimited }: Props) {
       className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-mono text-xl sm:text-2xl font-bold tabular-nums transition-colors ${
         active
           ? low
-            ? 'bg-red-600 text-white'
+            ? 'bg-red-600 text-fg'
             : 'bg-white text-black'
-          : 'bg-[#1f2937] text-gray-400'
+          : 'bg-card text-muted'
       }`}
     >
       {unlimited ? '∞' : format(ms)}
