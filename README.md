@@ -10,7 +10,6 @@ React + TypeScript на фронте, Node + Socket.IO на бэке, Supabase
 - **БД / Auth**: Supabase (Postgres + Google OAuth)
 
 ---
----
 
 ## Как протестировать
 
