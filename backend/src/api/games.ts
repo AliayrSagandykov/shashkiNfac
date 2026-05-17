@@ -17,7 +17,7 @@ export function registerGameRoutes(app: Express): void {
     const limit = Math.min(Math.max(Number(req.query.limit ?? 20), 1), 100)
     if (!userId) return res.status(400).json({ error: 'userId required' })
     const { data, error } = await supabase
-      .from('games')
+      .from('match_history')
       .select(
         'id, played_at, white_id, black_id, white_name, black_name, white_rating_after, black_rating_after, time_control, winner, end_reason',
       )
@@ -32,16 +32,16 @@ export function registerGameRoutes(app: Express): void {
     const supabase = getSupabase()
     if (!supabase) return res.status(503).json({ error: 'storage_unavailable' })
     const { data: game, error } = await supabase
-      .from('games')
+      .from('match_history')
       .select('*')
       .eq('id', req.params.id)
       .maybeSingle()
     if (error) return res.status(500).json({ error: error.message })
     if (!game) return res.status(404).json({ error: 'not_found' })
     const { data: analysis } = await supabase
-      .from('game_analyses')
+      .from('match_analyses')
       .select('depth, data, created_at')
-      .eq('game_id', req.params.id)
+      .eq('match_id', req.params.id)
       .maybeSingle()
     res.json({ game, analysis: analysis ?? null })
   })
@@ -53,9 +53,9 @@ export function registerGameRoutes(app: Express): void {
 
     // Already analyzed?
     const existing = await supabase
-      .from('game_analyses')
+      .from('match_analyses')
       .select('depth, data, created_at')
-      .eq('game_id', gameId)
+      .eq('match_id', gameId)
       .maybeSingle()
     if (existing.data) {
       return res.json({ analysis: existing.data, cached: true })
@@ -73,7 +73,7 @@ export function registerGameRoutes(app: Express): void {
     }
 
     const { data: game, error: gameErr } = await supabase
-      .from('games')
+      .from('match_history')
       .select('moves')
       .eq('id', gameId)
       .maybeSingle()
@@ -86,8 +86,8 @@ export function registerGameRoutes(app: Express): void {
     const promise = (async () => {
       const analysis = await analyzeGame(moves, depth, ANALYSIS_TIME_BUDGET_PER_PLY)
       const { error: saveErr } = await supabase
-        .from('game_analyses')
-        .insert({ game_id: gameId, depth, data: analysis })
+        .from('match_analyses')
+        .insert({ match_id: gameId, depth, data: analysis })
       if (saveErr) console.error('save analysis error', saveErr)
       return analysis
     })()

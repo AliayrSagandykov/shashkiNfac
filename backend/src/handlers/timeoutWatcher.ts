@@ -34,7 +34,7 @@ async function persistGame(
     moves: room.moves,
   }
   const { data, error } = await supabase
-    .from('games')
+    .from('match_history')
     .insert(row)
     .select('id')
     .single()
