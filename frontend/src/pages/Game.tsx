@@ -57,6 +57,7 @@ export default function Game() {
     drawOfferFrom,
     rematchOfferFrom,
     rematchDeclined,
+    persistedGameId,
     setGame,
     pushChat,
     pushMove,
@@ -270,8 +271,11 @@ export default function Game() {
       }
     }
 
+    const onPersisted = (p: { dbId: string }) => setGame({ persistedGameId: p.dbId })
+
     s.on('game_update', onUpdate)
     s.on('game_end', onEnd)
+    s.on('game_persisted', onPersisted)
     s.on('chat_message', onChat)
     s.on('draw_offered', onDrawOffered)
     s.on('draw_declined', onDrawDeclined)
@@ -284,6 +288,7 @@ export default function Game() {
     return () => {
       s.off('game_update', onUpdate)
       s.off('game_end', onEnd)
+      s.off('game_persisted', onPersisted)
       s.off('chat_message', onChat)
       s.off('draw_offered', onDrawOffered)
       s.off('draw_declined', onDrawDeclined)
@@ -544,6 +549,14 @@ export default function Game() {
         onRematch={mode === 'random' ? handleRequestRematch : handlePlayAgainLocal}
         onDeclineRematch={handleDeclineRematch}
         onHome={leaveGame}
+        onAnalyze={
+          mode === 'random' && persistedGameId
+            ? () => {
+                disconnectSocket()
+                navigate(`/review/${persistedGameId}`)
+              }
+            : undefined
+        }
       />
     </div>
   )

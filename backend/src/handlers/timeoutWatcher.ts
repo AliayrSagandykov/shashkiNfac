@@ -1,5 +1,49 @@
 import type { Server } from 'socket.io'
 import { gameRooms, computeElo } from '../game/gameRoom'
+import { getSupabase } from '../services/supabase'
+
+async function persistGame(
+  roomId: string,
+  winner: 'white' | 'black' | 'draw',
+  reason: 'no_moves' | 'resign' | 'timeout' | 'draw_agreed',
+  newRatingBlack: number,
+  newRatingWhite: number,
+  oldRatingBlack: number,
+  oldRatingWhite: number,
+): Promise<string | null> {
+  const room = gameRooms.get(roomId)
+  if (!room) return null
+  const supabase = getSupabase()
+  if (!supabase) return null
+
+  const isUuid = (s: string) => /^[0-9a-f-]{36}$/i.test(s)
+
+  const row = {
+    white_id: isUuid(room.userIdWhite) ? room.userIdWhite : null,
+    black_id: isUuid(room.userIdBlack) ? room.userIdBlack : null,
+    white_name: room.usernameWhite,
+    black_name: room.usernameBlack,
+    white_rating: oldRatingWhite,
+    black_rating: oldRatingBlack,
+    white_rating_after: newRatingWhite,
+    black_rating_after: newRatingBlack,
+    time_control: room.timeControl,
+    mode: 'random',
+    winner,
+    end_reason: reason,
+    moves: room.moves,
+  }
+  const { data, error } = await supabase
+    .from('games')
+    .insert(row)
+    .select('id')
+    .single()
+  if (error) {
+    console.error('persistGame insert error', error)
+    return null
+  }
+  return (data as { id: string }).id
+}
 
 export function endGame(
   io: Server,
@@ -43,6 +87,11 @@ export function endGame(
         delta: elo.deltaB,
       },
     },
+  })
+
+  // Fire-and-forget persistence — never blocks the game-end response.
+  void persistGame(gameId, winner, reason, elo.newA, elo.newB, oldBlack, oldWhite).then((dbId) => {
+    if (dbId) io.to(gameId).emit('game_persisted', { dbId })
   })
 }
 
