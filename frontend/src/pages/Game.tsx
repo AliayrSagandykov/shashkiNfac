@@ -550,10 +550,10 @@ export default function Game() {
         onDeclineRematch={handleDeclineRematch}
         onHome={leaveGame}
         onAnalyze={
-          mode === 'random' && persistedGameId
+          mode === 'random'
             ? () => {
                 disconnectSocket()
-                navigate(`/review/${persistedGameId}`)
+                navigate(`/review/${persistedGameId ?? 'latest'}`)
               }
             : undefined
         }

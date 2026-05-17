@@ -12,6 +12,7 @@ import OnboardingModal from '../components/OnboardingModal'
 import Avatar from '../components/Avatar'
 import { t } from '../i18n'
 import type { Level } from '../services/profile'
+import { fetchRecentGames, type SavedGame } from '../services/games'
 
 const TIME_OPTIONS = [
   { tc: '1+0' as TimeControl, label: 'play1' as const, category: 'bullet' as const },
@@ -36,6 +37,15 @@ export default function Home() {
   const isGuest = user?.id?.startsWith('guest-')
   const username = profile?.username ?? user?.user_metadata?.username ?? user?.email ?? 'Player'
   const rating = profile?.rating ?? 1200
+
+  const [recent, setRecent] = useState<SavedGame[]>([])
+  useEffect(() => {
+    if (!user?.id || isGuest) {
+      setRecent([])
+      return
+    }
+    void fetchRecentGames(user.id, 8).then(setRecent)
+  }, [user?.id, isGuest])
 
   useEffect(() => {
     if (!searching) {
@@ -349,6 +359,53 @@ export default function Home() {
               </p>
             )}
           </div>
+
+          {!isGuest && recent.length > 0 && (
+            <div className="mt-4 bg-card border border-line rounded-2xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-line flex items-center justify-between">
+                <div className="text-fg2 text-sm font-semibold">Recent games</div>
+                <button
+                  onClick={() => navigate('/profile')}
+                  className="text-muted hover:text-fg text-xs"
+                >
+                  all →
+                </button>
+              </div>
+              <div>
+                {recent.map((g) => {
+                  const meIsWhite = g.white_id === user?.id
+                  const opp = meIsWhite ? g.black_name : g.white_name
+                  const result =
+                    g.winner === 'draw'
+                      ? '½'
+                      : (meIsWhite && g.winner === 'white') ||
+                        (!meIsWhite && g.winner === 'black')
+                      ? 'W'
+                      : 'L'
+                  const color =
+                    result === 'W'
+                      ? 'text-emerald-400'
+                      : result === 'L'
+                      ? 'text-red-400'
+                      : 'text-muted'
+                  return (
+                    <button
+                      key={g.id}
+                      onClick={() => navigate(`/review/${g.id}`)}
+                      className="w-full grid grid-cols-[2rem_1fr_4rem_3.5rem] items-center px-4 py-2.5 border-b border-line/40 last:border-0 hover:bg-hover text-left"
+                    >
+                      <span className={`font-bold ${color}`}>{result}</span>
+                      <span className="text-fg text-sm truncate">vs {opp}</span>
+                      <span className="text-muted text-xs">{g.time_control}</span>
+                      <span className="text-muted text-xs text-right">
+                        {new Date(g.played_at).toLocaleDateString()}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
