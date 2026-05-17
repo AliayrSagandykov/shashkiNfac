@@ -21,6 +21,7 @@ interface Props {
   onRematch: () => void
   onDeclineRematch: () => void
   onHome: () => void
+  onAnalyze?: () => void
 }
 
 function PlayerBadge({
@@ -166,6 +167,15 @@ export default function GameOverModal(props: Props) {
                 {t('home_')}
               </button>
             </div>
+          )}
+
+          {props.onAnalyze && (
+            <button
+              onClick={props.onAnalyze}
+              className="w-full mt-2 bg-card2 hover:bg-hover border border-line text-fg2 hover:text-fg py-2.5 rounded-lg text-sm font-medium transition-colors"
+            >
+              🔬 Analyze game
+            </button>
           )}
         </div>
       </div>

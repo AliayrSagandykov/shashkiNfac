@@ -57,6 +57,7 @@ interface GameState {
   drawOfferFrom: Player | null
   rematchOfferFrom: Player | null
   rematchDeclined: boolean
+  persistedGameId: string | null
 
   setGame: (payload: Partial<GameState>) => void
   pushChat: (msg: ChatMsg) => void
@@ -98,6 +99,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   drawOfferFrom: null,
   rematchOfferFrom: null,
   rematchDeclined: false,
+  persistedGameId: null,
 
   setGame: (payload) => set((s) => ({ ...s, ...payload })),
 
@@ -155,5 +157,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       drawOfferFrom: null,
       rematchOfferFrom: null,
       rematchDeclined: false,
+      persistedGameId: null,
     }),
 }))

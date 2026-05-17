@@ -7,6 +7,7 @@ import { setupGameHandlers } from './handlers/gameHandlers'
 import { setupMatchmaking } from './matchmaking/matchmaker'
 import { gameRooms } from './game/gameRoom'
 import { endGame } from './handlers/timeoutWatcher'
+import { registerGameRoutes } from './api/games'
 
 const app = express()
 const httpServer = createServer(app)
@@ -29,6 +30,8 @@ app.get('/health', (_req, res) => {
 app.get('/api/leaderboard', async (_req, res) => {
   res.json({ players: [] })
 })
+
+registerGameRoutes(app)
 
 const matchmaker = setupMatchmaking(io)
 

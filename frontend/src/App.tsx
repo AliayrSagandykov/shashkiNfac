@@ -6,6 +6,7 @@ import Game from './pages/Game'
 import Profile from './pages/Profile'
 import Leaderboard from './pages/Leaderboard'
 import News from './pages/News'
+import Review from './pages/Review'
 import { useAuthStore } from './store/authStore'
 import { useProfileStore } from './store/profileStore'
 import { getLang, subscribeLang } from './i18n'
@@ -46,6 +47,7 @@ export default function App() {
       <Route path="/leaderboard" element={user ? <Leaderboard /> : <Navigate to="/login" />} />
       <Route path="/news" element={user ? <News /> : <Navigate to="/login" />} />
       <Route path="/game/:gameId" element={<Game />} />
+      <Route path="/review/:gameId" element={user ? <Review /> : <Navigate to="/login" />} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   )

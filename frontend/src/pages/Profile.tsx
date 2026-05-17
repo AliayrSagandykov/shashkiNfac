@@ -4,7 +4,9 @@ import Sidebar from '../components/Sidebar'
 import Avatar from '../components/Avatar'
 import { useAuthStore } from '../store/authStore'
 import { useProfileStore } from '../store/profileStore'
+import { useNavigate } from 'react-router-dom'
 import { fetchProfile, uploadAvatar, type Profile as ProfileT } from '../services/profile'
+import { fetchRecentGames, type SavedGame } from '../services/games'
 import { t } from '../i18n'
 import LanguageToggle from '../components/LanguageToggle'
 
@@ -43,8 +45,10 @@ export default function Profile() {
   const { user } = useAuthStore()
   const { profile: ownProfile, update } = useProfileStore()
 
+  const navigate = useNavigate()
   const viewingOwn = !routeId || routeId === user?.id
   const [otherProfile, setOtherProfile] = useState<ProfileT | null>(null)
+  const [games, setGames] = useState<SavedGame[]>([])
   const [otherLoading, setOtherLoading] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draftName, setDraftName] = useState('')
@@ -64,6 +68,15 @@ export default function Profile() {
       setOtherLoading(false)
     })
   }, [routeId, viewingOwn])
+
+  useEffect(() => {
+    const id = viewingOwn ? user?.id : routeId
+    if (!id || id.startsWith('guest-')) {
+      setGames([])
+      return
+    }
+    void fetchRecentGames(id, 10).then(setGames)
+  }, [viewingOwn, user?.id, routeId])
 
   const profile: ProfileT | null = viewingOwn ? ownProfile : otherProfile
 
@@ -260,6 +273,46 @@ export default function Profile() {
             <StatTile label={t('losses')} value={profile.losses} accent="red" />
             <StatTile label={t('draws')} value={profile.draws} />
           </div>
+
+          {games.length > 0 && (
+            <div className="mt-4 bg-card border border-line rounded-2xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-line text-fg2 text-sm font-semibold">
+                Recent games
+              </div>
+              <div>
+                {games.map((g) => {
+                  const meIsWhite = g.white_id === (viewingOwn ? user?.id : routeId)
+                  const opp = meIsWhite ? g.black_name : g.white_name
+                  const result =
+                    g.winner === 'draw'
+                      ? '½'
+                      : (meIsWhite && g.winner === 'white') || (!meIsWhite && g.winner === 'black')
+                      ? 'W'
+                      : 'L'
+                  const color =
+                    result === 'W'
+                      ? 'text-emerald-400'
+                      : result === 'L'
+                      ? 'text-red-400'
+                      : 'text-muted'
+                  return (
+                    <button
+                      key={g.id}
+                      onClick={() => navigate(`/review/${g.id}`)}
+                      className="w-full grid grid-cols-[2rem_1fr_5rem_3rem] items-center px-4 py-2.5 border-b border-line/40 last:border-0 hover:bg-hover text-left"
+                    >
+                      <span className={`font-bold ${color}`}>{result}</span>
+                      <span className="text-fg text-sm truncate">vs {opp}</span>
+                      <span className="text-muted text-xs">{g.time_control}</span>
+                      <span className="text-muted text-xs text-right">
+                        {new Date(g.played_at).toLocaleDateString()}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>
