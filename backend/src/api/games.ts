@@ -61,38 +61,30 @@ export function registerGameRoutes(app: Express): void {
       return res.json({ analysis: existing.data, cached: true })
     }
 
-    // Already running?
-    const running = inFlight.get(gameId)
-    if (running) {
-      try {
-        const result = await running
-        return res.json({ analysis: result, cached: false })
-      } catch (e) {
-        return res.status(500).json({ error: e instanceof Error ? e.message : 'analysis_failed' })
-      }
+    // Already running? Register the in-flight slot BEFORE any awaits below
+    // so concurrent callers can dedupe instead of starting parallel work.
+    let promise = inFlight.get(gameId)
+    if (!promise) {
+      const depth = Number(req.body?.depth) || ANALYSIS_DEPTH_DEFAULT
+      promise = (async () => {
+        const { data: game, error: gameErr } = await supabase
+          .from('match_history')
+          .select('moves')
+          .eq('id', gameId)
+          .maybeSingle()
+        if (gameErr) throw new Error(gameErr.message)
+        if (!game) throw new Error('not_found')
+        const moves = (game.moves as Move[]) ?? []
+        const analysis = await analyzeGame(moves, depth, ANALYSIS_TIME_BUDGET_PER_PLY)
+        const { error: saveErr } = await supabase
+          .from('match_analyses')
+          .insert({ match_id: gameId, depth, data: analysis })
+        if (saveErr) console.error('save analysis error', saveErr)
+        return analysis
+      })()
+      inFlight.set(gameId, promise)
     }
 
-    const { data: game, error: gameErr } = await supabase
-      .from('match_history')
-      .select('moves')
-      .eq('id', gameId)
-      .maybeSingle()
-    if (gameErr) return res.status(500).json({ error: gameErr.message })
-    if (!game) return res.status(404).json({ error: 'not_found' })
-
-    const depth = Number(req.body?.depth) || ANALYSIS_DEPTH_DEFAULT
-    const moves = (game.moves as Move[]) ?? []
-
-    const promise = (async () => {
-      const analysis = await analyzeGame(moves, depth, ANALYSIS_TIME_BUDGET_PER_PLY)
-      const { error: saveErr } = await supabase
-        .from('match_analyses')
-        .insert({ match_id: gameId, depth, data: analysis })
-      if (saveErr) console.error('save analysis error', saveErr)
-      return analysis
-    })()
-
-    inFlight.set(gameId, promise)
     try {
       const analysis = await promise
       // Bump quota for the requester if they passed userId.
